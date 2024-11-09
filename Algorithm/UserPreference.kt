@@ -63,6 +63,9 @@ class UserPreference {
             }
             .take(5)  // 상위 5개 알림만 추천
     }
+
+    // helo 
+    // hi
 }
 
 fun main() {
