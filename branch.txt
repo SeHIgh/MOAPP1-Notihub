@@ -5,6 +5,11 @@
 
 
 git checkout (-b) AL/#1-Weight
+
+git pull origin AL/gutae
+
 git add .
 git commit -m "가중치 부분을 수정하는 작업 수행"
 git push origin AL/#1-Weight
+
+hello
