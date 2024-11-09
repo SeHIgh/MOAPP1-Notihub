@@ -3,8 +3,6 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 
-// hello
-
 data class Notification(val message: String, val keywords: List<String>, val timestamp: Long)
 data class KeywordWeight(val keyword: String, var weight: Double)
 
@@ -86,5 +84,3 @@ fun main() {
     val recommended = userPreference.recommendNotifications(notifications)
     println("추천 알림: ${recommended.map { it.message }}")
 }
-
-
