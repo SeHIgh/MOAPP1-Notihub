@@ -1,0 +1,10 @@
+└── main (origin)
+       ㄴ- AL/#1-Weight
+       ㄴ- AL/sehyeon
+       ㄴ- AL/gutae
+
+
+git checkout (-b) AL/#1-Weight
+git add .
+git commit -m "가중치 부분을 수정하는 작업 수행"
+git push origin AL/#1-Weight
