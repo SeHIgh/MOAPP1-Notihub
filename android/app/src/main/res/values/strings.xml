@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Notihub</string>
+    <string name="cse_name">CSE</string>
+    <string name="it_name">IT</string>
 </resources>
