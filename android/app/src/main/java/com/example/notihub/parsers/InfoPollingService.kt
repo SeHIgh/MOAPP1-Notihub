@@ -45,7 +45,7 @@ class InfoPollingService : LifecycleService() {
         private const val PROMPT_HEADER =
             "아래 글을 처리해서 아래의 json 형식으로 알려 줘." +
             "{\"summary\": \"5문장으로 요약된 글\", \"keywords\": [\"가장중요한단어1\", ..., \"가장중요한단어5\"]}\n\n"
-        private val FIFTY_SECONDS = 15.seconds
+        private val FIVE_SECONDS = 5.seconds
     }
 
     private val binders = mutableListOf<InfoBinder>()
@@ -81,8 +81,8 @@ class InfoPollingService : LifecycleService() {
                             keywords.addAll(data.keywords)
                         }
                     }
-                    if (elapsedTime < FIFTY_SECONDS)
-                        delay(FIFTY_SECONDS - elapsedTime)
+                    if (elapsedTime < FIVE_SECONDS)
+                        delay(FIVE_SECONDS - elapsedTime)
                 }
             }
 
@@ -90,7 +90,7 @@ class InfoPollingService : LifecycleService() {
                 val announcements = getKNUCSEAnnouncementList()
                 // TODO: 새 글인지 확인
                 // for (announcement in announcements) {
-                for (announcement in announcements.take(2)) {
+                for (announcement in announcements.take(3)) {
                     launch {
                         getKNUCSEAnnouncementDetail(announcement)
                         if (announcement.body.isNotEmpty())
@@ -103,7 +103,7 @@ class InfoPollingService : LifecycleService() {
                 val announcements = getKNUITAnnouncementList()
                 // TODO: 새 글인지 확인
                 // for (announcement in announcements) {
-                for (announcement in announcements.take(2)) {
+                for (announcement in announcements.take(3)) {
                     launch {
                         getKNUITAnnouncementDetail(announcement)
                         if (announcement.body.isNotEmpty())
