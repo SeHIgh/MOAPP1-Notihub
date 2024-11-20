@@ -3,14 +3,21 @@ package com.example.notihub.parsers
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
+import android.util.Log
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import com.example.notihub.BuildConfig
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.gson.Gson
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.Collections
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.measureTime
 
 class InfoPollingService : LifecycleService() {
     class InfoBinder: Binder() {
@@ -29,20 +36,65 @@ class InfoPollingService : LifecycleService() {
         }
     }
 
+    private data class GeminiResponse(
+        val summary: String,
+        val keywords: List<String>
+    )
+
+    companion object {
+        private const val PROMPT_HEADER =
+            "아래 글을 처리해서 아래의 json 형식으로 알려 줘." +
+            "{\"summary\": \"5문장으로 요약된 글\", \"keywords\": [\"가장중요한단어1\", ..., \"가장중요한단어5\"]}\n\n"
+        private val FIFTY_SECONDS = 15.seconds
+    }
+
     private val binders = mutableListOf<InfoBinder>()
+    private val geminiModel = GenerativeModel(
+        modelName = "gemini-1.5-flash",
+        apiKey = BuildConfig.GEMINI_API_KEY
+    )
 
     override fun onCreate() {
         super.onCreate()
         lifecycleScope.launch(Dispatchers.Default) {
             val jobs = mutableListOf<Deferred<List<KNUAnnouncement>>>()
+            val geminiChannel = Channel<KNUAnnouncement>()
             val newItems = mutableListOf<KNUAnnouncement>()
+
+            // Gemini Job
+            launch(Dispatchers.IO) {
+                val gson = Gson()
+                for (announcement in geminiChannel) {
+                    val elapsedTime = measureTime {
+                        Log.d("Notihub::Gemini", "URL: ${announcement.bodyUrl} | Body: ${announcement.body}")
+
+                        var response = geminiModel.generateContent(
+                            PROMPT_HEADER + announcement.body).text ?: ""
+                        response = response.trim().trim('`')
+                        if (response.startsWith("json"))
+                            response = response.drop(4)
+
+                        Log.d("Notihub::Gemini", response ?: "null")
+                        val data = gson.fromJson(response, GeminiResponse::class.java)
+                        announcement.run {
+                            summary = data.summary
+                            keywords.addAll(data.keywords)
+                        }
+                    }
+                    if (elapsedTime < FIFTY_SECONDS)
+                        delay(FIFTY_SECONDS - elapsedTime)
+                }
+            }
 
             jobs.add(async {
                 val announcements = getKNUCSEAnnouncementList()
                 // TODO: 새 글인지 확인
-                for (announcement in announcements) {
+                // for (announcement in announcements) {
+                for (announcement in announcements.take(2)) {
                     launch {
                         getKNUCSEAnnouncementDetail(announcement)
+                        if (announcement.body.isNotEmpty())
+                            geminiChannel.send(announcement)
                     }
                 }
                 announcements
@@ -50,9 +102,12 @@ class InfoPollingService : LifecycleService() {
             jobs.add(async {
                 val announcements = getKNUITAnnouncementList()
                 // TODO: 새 글인지 확인
-                for (announcement in announcements) {
+                // for (announcement in announcements) {
+                for (announcement in announcements.take(2)) {
                     launch {
                         getKNUITAnnouncementDetail(announcement)
+                        if (announcement.body.isNotEmpty())
+                            geminiChannel.send(announcement)
                     }
                 }
                 announcements
@@ -61,9 +116,8 @@ class InfoPollingService : LifecycleService() {
             for (job in jobs) {
                 newItems.addAll(job.await())
             }
+            geminiChannel.close()
             newItems.sort()
-
-            // TODO: Gemini
 
             // TODO: 유사도
 

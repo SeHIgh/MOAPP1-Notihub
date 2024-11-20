@@ -30,7 +30,8 @@ suspend fun getKNUITAnnouncementList(): MutableList<KNUAnnouncement> =
             announcement = KNUAnnouncement(
                 KNUAnnouncementSource.IT, idTag.text().toInt(), linkTag.text(),
                 KNUAnnouncement.Time(dateParts[0].toInt(), dateParts[1].toInt(), dateParts[2].toInt(), 0, 0),
-                "$ITUrlBase/$announcementURL", "")
+                "$ITUrlBase/$announcementURL", "", "", mutableListOf()
+            )
             announcements.add(announcement)
         }
 

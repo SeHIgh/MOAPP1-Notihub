@@ -10,7 +10,9 @@ data class KNUAnnouncement(
     val title: String,
     val time: Time,
     val bodyUrl: String,
-    var body: String
+    var body: String,
+    var summary: String,
+    val keywords: MutableList<String>,
 ): Comparable<KNUAnnouncement> {
     data class Time (
         val year: Int,

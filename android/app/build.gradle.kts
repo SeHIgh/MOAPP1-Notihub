@@ -1,6 +1,20 @@
+import com.android.build.api.variant.BuildConfigField
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+}
+
+androidComponents {
+    onVariants {
+        it.buildConfigFields.put(
+            "GEMINI_API_KEY", BuildConfigField(
+                "String",
+                gradleLocalProperties(rootDir, providers).getProperty("gemini.api.key"),
+                "Gemini API Key")
+        )
+    }
 }
 
 android {
@@ -15,6 +29,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
@@ -46,6 +64,7 @@ dependencies {
     implementation(libs.jsoup)
     implementation(libs.gson)
     implementation(libs.androidx.lifecycle.service)
+    implementation(libs.generativeai)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.junit)

@@ -2,15 +2,11 @@ package com.example.notihub.parsers
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 import java.io.File
-import kotlin.time.measureTime
 
 
 const val CSEAnnouncementUrl = "https://cse.knu.ac.kr/bbs/board.php?bo_table=sub5_1&lang=kor"
@@ -33,7 +29,7 @@ suspend fun getKNUCSEAnnouncementList(): MutableList<KNUAnnouncement> =
             announcement = KNUAnnouncement(
                 KNUAnnouncementSource.CSE, idTag.text().toInt(), linkTag.text(),
                 KNUAnnouncement.Time(dateParts[0].toInt(), dateParts[1].toInt(), dateParts[2].toInt(), 0, 0),
-                announcementURL, ""
+                announcementURL, "", "", mutableListOf()
             )
             announcements.add(announcement)
         }

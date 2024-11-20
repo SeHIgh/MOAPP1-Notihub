@@ -22,7 +22,7 @@ class MainRecyclerAdapter(val items: MutableList<KNUAnnouncement>):
         val binding = (holder as MainViewHolder).binding
         binding.textViewTitle.text = items[position].title
         binding.textViewTime.text = items[position].time.toString()
-        binding.textViewSummary.text = items[position].body
+        binding.textViewSummary.text = items[position].summary
         binding.textViewSource.text = when(items[position].source) {
             KNUAnnouncementSource.CSE -> context.getText(R.string.cse_name)
             KNUAnnouncementSource.IT -> context.getText(R.string.it_name)
