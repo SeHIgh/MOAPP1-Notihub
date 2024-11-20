@@ -41,7 +41,13 @@ suspend fun getKNUCSEAnnouncementDetail(announcement: KNUAnnouncement) =
     withContext(Dispatchers.Default) {
         val pageDoc = getURL(announcement.bodyUrl)
         val bodyText = StringBuilder()
-        for (node in pageDoc?.select("div#bo_v_con > p") ?: return@withContext) {
+        val dateTimeParts = pageDoc?.selectFirst("strong.if_date")?.text()?.run {
+            split(" ").last().split(":")
+        } ?: return@withContext
+
+        announcement.time.hour = dateTimeParts[0].toInt()
+        announcement.time.minute = dateTimeParts[1].toInt()
+        for (node in pageDoc.select("div#bo_v_con > p") ?: return@withContext) {
             val innerText = node.text()
             if (innerText.isNotBlank()) {
                 bodyText.append(innerText.trim())

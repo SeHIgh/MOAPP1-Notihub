@@ -15,11 +15,11 @@ data class KNUAnnouncement(
     val keywords: MutableList<String>,
 ): Comparable<KNUAnnouncement> {
     data class Time (
-        val year: Int,
-        val month: Int,
-        val day: Int,
-        val hour: Int,
-        val minute: Int
+        var year: Int,
+        var month: Int,
+        var day: Int,
+        var hour: Int,
+        var minute: Int
     ): Comparable<Time> {
         override fun toString(): String {
             return "$year-${"%02d".format(month)}-${"%02d".format(day)} ${"%02d".format(hour)}:${"%02d".format(minute)}"
