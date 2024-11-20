@@ -1,5 +1,6 @@
 package com.example.notihub
 
+import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -42,16 +43,17 @@ class MainActivity : AppCompatActivity() {
                 Intent(this, InfoPollingService::class.java),
                 object: ServiceConnection {
                     lateinit var infoPollingBinder: InfoPollingService.InfoBinder
+
+                    @SuppressLint("NotifyDataSetChanged")
                     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                         infoPollingBinder = (service as InfoPollingService.InfoBinder)
-                        infoPollingBinder.addItemCallback {
-                            announcementItems.add(0, it)
-                            adapter.notifyItemChanged(0)
-                        }
-                        infoPollingBinder.addAllDoneCallback {
-                            Toast.makeText(this@MainActivity, "Done. Count: $it", Toast.LENGTH_SHORT).show()
+                        infoPollingBinder.addNewItemsCallback {
+                            announcementItems.addAll(it)
+                            adapter.notifyDataSetChanged()
+                            Toast.makeText(this@MainActivity, "Done. Count: ${it.size}", Toast.LENGTH_SHORT).show()
                         }
                     }
+
                     override fun onServiceDisconnected(name: ComponentName?) {
                     }
                 },

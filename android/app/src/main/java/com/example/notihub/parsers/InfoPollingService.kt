@@ -10,33 +10,21 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Collections
 
 class InfoPollingService : LifecycleService() {
     class InfoBinder: Binder() {
-        private val callbacks = mutableListOf<(KNUAnnouncement) -> Unit>()
-        private val allDoneCallbacks = mutableListOf<(Int) -> Unit>()
+        private val newItemsCallback = mutableListOf<(List<KNUAnnouncement>) -> Unit>()
 
-        fun addItemCallback(callback: (KNUAnnouncement) -> Unit) {
-            callbacks.add(callback)
+        fun addNewItemsCallback(callback: (List<KNUAnnouncement>) -> Unit) {
+            newItemsCallback.add(callback)
         }
-        fun removeItemCallback(callback: (KNUAnnouncement) -> Unit) {
-            callbacks.remove(callback)
+        fun removeNewItemsCallback(callback: (List<KNUAnnouncement>) -> Unit) {
+            newItemsCallback.remove(callback)
         }
-        suspend fun onItemResult(result: KNUAnnouncement) {
-            for (callback in callbacks) {
-                withContext(Dispatchers.Main.immediate) { callback(result) }
-            }
-        }
-
-        fun addAllDoneCallback(callback: (Int) -> Unit) {
-            allDoneCallbacks.add(callback)
-        }
-        fun removeAllDoneCallback(callback: (Int) -> Unit) {
-            allDoneCallbacks.remove(callback)
-        }
-        suspend fun onAllDone(newCount: Int) {
-            for (callback in allDoneCallbacks) {
-                withContext(Dispatchers.Main.immediate) { callback(newCount) }
+        suspend fun onNewItems(newItems: List<KNUAnnouncement>) {
+            for (callback in newItemsCallback) {
+                withContext(Dispatchers.Main.immediate) { callback(newItems) }
             }
         }
     }
@@ -45,9 +33,9 @@ class InfoPollingService : LifecycleService() {
 
     override fun onCreate() {
         super.onCreate()
-        lifecycleScope.launch {
-            val jobs = mutableListOf<Deferred<Int>>()
-            var newAnnouncementCount = 0
+        lifecycleScope.launch(Dispatchers.Default) {
+            val jobs = mutableListOf<Deferred<List<KNUAnnouncement>>>()
+            val newItems = mutableListOf<KNUAnnouncement>()
 
             jobs.add(async {
                 val announcements = getKNUCSEAnnouncementList()
@@ -55,12 +43,9 @@ class InfoPollingService : LifecycleService() {
                 for (announcement in announcements) {
                     launch {
                         getKNUCSEAnnouncementDetail(announcement)
-                        for (binder in binders) {
-                            binder.onItemResult(announcement)
-                        }
                     }
                 }
-                announcements.size
+                announcements
             })
             jobs.add(async {
                 val announcements = getKNUITAnnouncementList()
@@ -68,16 +53,15 @@ class InfoPollingService : LifecycleService() {
                 for (announcement in announcements) {
                     launch {
                         getKNUITAnnouncementDetail(announcement)
-                        for (binder in binders) {
-                            binder.onItemResult(announcement)
-                        }
                     }
                 }
-                announcements.size
+                announcements
             })
+
             for (job in jobs) {
-                newAnnouncementCount += job.await()
+                newItems.addAll(job.await())
             }
+            newItems.sort()
 
             // TODO: Gemini
 
@@ -85,7 +69,7 @@ class InfoPollingService : LifecycleService() {
 
             // TODO: 새 글 알림
             for (binder in binders) {
-                binder.onAllDone(newAnnouncementCount)
+                binder.onNewItems(newItems)
             }
 
             // TODO: AlarmManager
