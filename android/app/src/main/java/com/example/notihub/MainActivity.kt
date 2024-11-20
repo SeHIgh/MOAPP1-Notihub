@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -16,6 +17,9 @@ import com.example.notihub.parsers.InfoPollingService
 import com.example.notihub.parsers.KNUAnnouncement
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var infoPollingServiceConnection: ServiceConnection
+
+    @SuppressLint("NotifyDataSetChanged")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = ActivityMainBinding.inflate(layoutInflater)
@@ -31,32 +35,44 @@ class MainActivity : AppCompatActivity() {
 
         val announcementItems = mutableListOf<KNUAnnouncement>()
         val adapter = MainRecyclerAdapter(announcementItems)
+        infoPollingServiceConnection = object: ServiceConnection {
+            lateinit var infoPollingBinder: InfoPollingService.InfoBinder
+            var done = false
+
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                done = true
+                infoPollingBinder = (service as InfoPollingService.InfoBinder)
+                infoPollingBinder.addNewItemsCallback {
+                    announcementItems.addAll(it)
+                    adapter.notifyDataSetChanged()
+                    binding.fabRefresh.visibility = View.VISIBLE
+                    Toast.makeText(this@MainActivity, "Done. Count: ${it.size}", Toast.LENGTH_SHORT).show()
+                    unbindService(this)
+                }
+            }
+
+            override fun onServiceDisconnected(name: ComponentName?) {
+                if (!done) {
+                    binding.fabRefresh.visibility = View.VISIBLE
+                    Toast.makeText(this@MainActivity, "FAILED", Toast.LENGTH_SHORT).show()
+                    unbindService(this)
+                }
+            }
+        }
 
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
         binding.recyclerView.addItemDecoration(DividerItemDecoration(
             this, LinearLayoutManager.VERTICAL
         ))
-
         binding.fabRefresh.setOnClickListener {
+            binding.fabRefresh.visibility = View.INVISIBLE
+            announcementItems.clear()
+            adapter.notifyDataSetChanged()
+
             bindService(
                 Intent(this, InfoPollingService::class.java),
-                object: ServiceConnection {
-                    lateinit var infoPollingBinder: InfoPollingService.InfoBinder
-
-                    @SuppressLint("NotifyDataSetChanged")
-                    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                        infoPollingBinder = (service as InfoPollingService.InfoBinder)
-                        infoPollingBinder.addNewItemsCallback {
-                            announcementItems.addAll(it)
-                            adapter.notifyDataSetChanged()
-                            Toast.makeText(this@MainActivity, "Done. Count: ${it.size}", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-
-                    override fun onServiceDisconnected(name: ComponentName?) {
-                    }
-                },
+                infoPollingServiceConnection,
                 Context.BIND_AUTO_CREATE
             )
             Toast.makeText(this, "Refreshing...", Toast.LENGTH_SHORT).show()

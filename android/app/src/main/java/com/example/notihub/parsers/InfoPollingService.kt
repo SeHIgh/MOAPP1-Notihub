@@ -11,6 +11,7 @@ import com.google.ai.client.generativeai.GenerativeModel
 import com.google.gson.Gson
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -53,87 +54,19 @@ class InfoPollingService : LifecycleService() {
         modelName = "gemini-1.5-flash",
         apiKey = BuildConfig.GEMINI_API_KEY
     )
+    private var job: Job? = null
 
     override fun onCreate() {
         super.onCreate()
-        lifecycleScope.launch(Dispatchers.Default) {
-            val jobs = mutableListOf<Deferred<List<KNUAnnouncement>>>()
-            val geminiChannel = Channel<KNUAnnouncement>()
-            val newItems = mutableListOf<KNUAnnouncement>()
-
-            // Gemini Job
-            launch(Dispatchers.IO) {
-                val gson = Gson()
-                for (announcement in geminiChannel) {
-                    val elapsedTime = measureTime {
-                        Log.d("Notihub::Gemini", "URL: ${announcement.bodyUrl} | Body: ${announcement.body}")
-
-                        var response = geminiModel.generateContent(
-                            PROMPT_HEADER + announcement.body).text ?: ""
-                        response = response.trim().trim('`')
-                        if (response.startsWith("json"))
-                            response = response.drop(4)
-
-                        Log.d("Notihub::Gemini", response ?: "null")
-                        val data = gson.fromJson(response, GeminiResponse::class.java)
-                        announcement.run {
-                            summary = data.summary
-                            keywords.addAll(data.keywords)
-                        }
-                    }
-                    if (elapsedTime < FIVE_SECONDS)
-                        delay(FIVE_SECONDS - elapsedTime)
-                }
-            }
-
-            jobs.add(async {
-                val announcements = getKNUCSEAnnouncementList()
-                // TODO: 새 글인지 확인
-                // for (announcement in announcements) {
-                for (announcement in announcements.take(3)) {
-                    launch {
-                        getKNUCSEAnnouncementDetail(announcement)
-                        if (announcement.body.isNotEmpty())
-                            geminiChannel.send(announcement)
-                    }
-                }
-                announcements
-            })
-            jobs.add(async {
-                val announcements = getKNUITAnnouncementList()
-                // TODO: 새 글인지 확인
-                // for (announcement in announcements) {
-                for (announcement in announcements.take(3)) {
-                    launch {
-                        getKNUITAnnouncementDetail(announcement)
-                        if (announcement.body.isNotEmpty())
-                            geminiChannel.send(announcement)
-                    }
-                }
-                announcements
-            })
-
-            for (job in jobs) {
-                newItems.addAll(job.await())
-            }
-            geminiChannel.close()
-            newItems.sort()
-
-            // TODO: 유사도
-
-            // TODO: 새 글 알림
-            for (binder in binders) {
-                binder.onNewItems(newItems)
-            }
-
-            // TODO: AlarmManager
-        }
+        job = launchJob()
     }
 
     override fun onBind(intent: Intent): IBinder {
         super.onBind(intent)
         val binder = InfoBinder()
         binders.add(binder)
+        if (job?.isCompleted == true)
+            job = launchJob()
         return binder
     }
 
@@ -141,6 +74,84 @@ class InfoPollingService : LifecycleService() {
         // TODO: 할당된 Binder remove (어떻게?)
         return super.onUnbind(intent)
     }
+
+    private fun launchJob() = lifecycleScope.launch(Dispatchers.Default) {
+        val geminiChannel = Channel<KNUAnnouncement>()
+        val newItems = mutableListOf<KNUAnnouncement>()
+        val jobs = mutableListOf<Deferred<List<KNUAnnouncement>>>()
+        val geminiJob: Job = launch { geminiLoop(geminiChannel) }
+
+        jobs.add(async {
+            val announcements = getKNUCSEAnnouncementList()
+            // TODO: 새 글인지 확인
+            // for (announcement in announcements) {
+            for (announcement in announcements.take(3)) {
+                launch {
+                    getKNUCSEAnnouncementDetail(announcement)
+                    if (announcement.body.isNotEmpty())
+                        geminiChannel.send(announcement)
+                }
+            }
+            announcements
+        })
+        jobs.add(async {
+            val announcements = getKNUITAnnouncementList()
+            // TODO: 새 글인지 확인
+            // for (announcement in announcements) {
+            for (announcement in announcements.take(3)) {
+                launch {
+                    getKNUITAnnouncementDetail(announcement)
+                    if (announcement.body.isNotEmpty())
+                        geminiChannel.send(announcement)
+                }
+            }
+            announcements
+        })
+
+        for (job in jobs) {
+            newItems.addAll(job.await())
+        }
+        geminiChannel.close()
+        geminiJob.join()
+        newItems.sort()
+
+        // TODO: 유사도
+
+        // TODO: 새 글 알림
+        for (binder in binders) {
+            binder.onNewItems(newItems)
+        }
+
+        // TODO: AlarmManager
+
+        stopSelf()
+    }
+
+    private suspend fun geminiLoop(channel: Channel<KNUAnnouncement>) =
+        withContext(Dispatchers.IO) {
+            val gson = Gson()
+            for (announcement in channel) {
+                // announcement.summary = announcement.body
+                val elapsedTime = measureTime {
+                    Log.d("Notihub::Gemini", "URL: ${announcement.bodyUrl} | Body: ${announcement.body}")
+                    var response = geminiModel.generateContent(
+                        PROMPT_HEADER + announcement.body
+                    ).text ?: ""
+                    response = response.trim().trim('`')
+                    if (response.startsWith("json"))
+                        response = response.drop(4)
+                    Log.d("Notihub::Gemini", response)
+
+                    val data = gson.fromJson(response, GeminiResponse::class.java)
+                    announcement.run {
+                        summary = data.summary
+                        keywords.addAll(data.keywords)
+                    }
+                }
+                if (elapsedTime < FIVE_SECONDS)
+                    delay(FIVE_SECONDS - elapsedTime)
+            }
+        }
 
     // private suspend fun getNewAnnouncements(
     //     getList: () -> List<KNUAnnouncement>,
