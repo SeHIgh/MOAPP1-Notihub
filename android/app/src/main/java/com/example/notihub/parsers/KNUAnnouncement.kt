@@ -22,7 +22,7 @@ data class KNUAnnouncement(
         val minute: Int
     ): Comparable<Time> {
         override fun toString(): String {
-            return "$year-$month-$day ${"%02d".format(hour)}:${"%02d".format(minute)}"
+            return "$year-${"%02d".format(month)}-${"%02d".format(day)} ${"%02d".format(hour)}:${"%02d".format(minute)}"
         }
 
         override fun compareTo(other: Time): Int =

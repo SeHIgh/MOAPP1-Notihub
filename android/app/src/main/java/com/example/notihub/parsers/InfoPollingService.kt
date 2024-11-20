@@ -85,10 +85,11 @@ class InfoPollingService : LifecycleService() {
             val announcements = getKNUCSEAnnouncementList()
             // TODO: 새 글인지 확인
             // for (announcement in announcements) {
-            for (announcement in announcements.take(3)) {
+            for ((i, announcement) in announcements.withIndex()) {
                 launch {
                     getKNUCSEAnnouncementDetail(announcement)
-                    if (announcement.body.isNotEmpty())
+                    // if (announcement.body.isNotEmpty())
+                    if (announcement.body.isNotEmpty() && (i == 0 || i == 1))
                         geminiChannel.send(announcement)
                 }
             }
@@ -97,12 +98,11 @@ class InfoPollingService : LifecycleService() {
         jobs.add(async {
             val announcements = getKNUITAnnouncementList()
             // TODO: 새 글인지 확인
-            // for (announcement in announcements) {
-            for (announcement in announcements.take(3)) {
+            for (announcement in announcements) {
                 launch {
                     getKNUITAnnouncementDetail(announcement)
-                    if (announcement.body.isNotEmpty())
-                        geminiChannel.send(announcement)
+                    // if (announcement.body.isNotEmpty())
+                    //     geminiChannel.send(announcement)
                 }
             }
             announcements
