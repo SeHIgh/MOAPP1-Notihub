@@ -4,14 +4,18 @@ import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("com.google.devtools.ksp")
+    id("kotlin-parcelize")
 }
 
 androidComponents {
     onVariants {
+        val geminiApiKey = gradleLocalProperties(rootDir, providers).getProperty("gemini.api.key")
+            ?: throw IllegalArgumentException("Gemini API Key is missing in gradle.properties")
         it.buildConfigFields.put(
             "GEMINI_API_KEY", BuildConfigField(
                 "String",
-                gradleLocalProperties(rootDir, providers).getProperty("gemini.api.key"),
+                geminiApiKey,
                 "Gemini API Key")
         )
     }
@@ -70,4 +74,16 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // Room
+    val room_version = "2.6.1"
+
+    implementation("androidx.room:room-runtime:$room_version")
+
+    // If this project uses any Kotlin source, use Kotlin Symbol Processing (KSP)
+    // See Add the KSP plugin to your project
+    ksp("androidx.room:room-compiler:$room_version")
+
+    // optional - Kotlin Extensions and Coroutines support for Room
+    implementation("androidx.room:room-ktx:$room_version")
 }
