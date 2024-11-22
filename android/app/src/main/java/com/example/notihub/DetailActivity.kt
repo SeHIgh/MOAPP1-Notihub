@@ -1,23 +1,15 @@
 package com.example.notihub
 
-import android.app.LauncherActivity
-import android.content.Intent
+import android.os.Build
 import android.os.Bundle
-import androidx.activity.addCallback
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.notihub.databinding.ActivityDetailBinding
-import com.example.notihub.databinding.ActivityMainBinding
+import com.example.notihub.parsers.KNUAnnouncement
+import com.example.notihub.parsers.KNUAnnouncementSource
 
 class DetailActivity : AppCompatActivity() {
     companion object {
-        const val TITLE = "title"
-        const val TIME = "time"
-        const val BOARD = "board"
-        const val SUMMARY = "summary"
-        const val BODY = "body"
+        const val DATA = "DATA"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,10 +42,20 @@ class DetailActivity : AppCompatActivity() {
         //     })
         // }
 
-        intent.getStringExtra(TITLE)?.let { binding.textViewTitle.text = it }
-        intent.getStringExtra(TIME)?.let { binding.textViewTime.text = it }
-        intent.getStringExtra(BOARD)?.let { binding.textViewBoard.text = it }
-        intent.getStringExtra(SUMMARY)?.let { binding.textViewSummary.text = it }
-        intent.getStringExtra(BODY)?.let { binding.textViewDetail.text = it }
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(DATA, KNUAnnouncement::class.java)
+        } else {
+            intent.getParcelableExtra(DATA)
+        }?.let {
+            binding.textViewTitle.text = it.title
+            binding.textViewTime.text = it.time.toString()
+            binding.textViewBoard.text = when(it.source) {
+                KNUAnnouncementSource.CSE -> getText(R.string.cse_name)
+                KNUAnnouncementSource.IT -> getText(R.string.it_name)
+            }
+            binding.textViewSummary.text = it.summary
+            binding.textViewDetail.text = it.body
+
+        }
     }
 }

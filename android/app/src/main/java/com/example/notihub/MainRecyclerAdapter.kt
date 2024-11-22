@@ -9,9 +9,9 @@ import com.example.notihub.databinding.ItemMainBinding
 import com.example.notihub.parsers.KNUAnnouncement
 import com.example.notihub.parsers.KNUAnnouncementSource
 
-class MainRecyclerAdapter(val items: MutableList<KNUAnnouncement>):
+class MainRecyclerAdapter(private val items: MutableList<KNUAnnouncement>):
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    lateinit var context: Context
+    private lateinit var context: Context
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         context = parent.context
@@ -28,16 +28,14 @@ class MainRecyclerAdapter(val items: MutableList<KNUAnnouncement>):
 
         binding.textViewTitle.text = items[position].title
         binding.textViewTime.text = items[position].time.toString()
-        binding.textViewSummary.text = items[position].summary
+        binding.textViewSummary.text = items[position].summary.ifEmpty {
+            items[position].body
+        }
         binding.textViewSource.text = boardText
 
         binding.root.setOnClickListener {
             context.startActivity(Intent(context, DetailActivity::class.java).apply {
-                putExtra(DetailActivity.TITLE, items[position].title)
-                putExtra(DetailActivity.TIME, items[position].time.toString())
-                putExtra(DetailActivity.BOARD, boardText)
-                putExtra(DetailActivity.SUMMARY, items[position].summary)
-                putExtra(DetailActivity.BODY, items[position].body)
+                putExtra(DetailActivity.DATA, items[position])
             })
         }
     }
