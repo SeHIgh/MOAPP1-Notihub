@@ -1,4 +1,4 @@
-package com.example.notihub
+package com.example.notihub.activities
 
 import android.annotation.SuppressLint
 import android.content.ComponentName
@@ -13,11 +13,12 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.notihub.adapters.MainListAdapter
 import com.example.notihub.databinding.ActivityMainBinding
 import com.example.notihub.parsers.InfoPollingService
 import com.example.notihub.parsers.KNUAnnouncement
 
-class MainActivity : AppCompatActivity() {
+class ItemListActivity : AppCompatActivity() {
     companion object {
         const val ANNUONCEMENTS = "announcements"
     }
@@ -39,7 +40,7 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
 
-        val adapter = MainRecyclerAdapter(announcementItems)
+        val adapter = MainListAdapter(announcementItems)
         infoPollingServiceConnection = object: ServiceConnection {
             lateinit var infoPollingBinder: InfoPollingService.InfoBinder
             var done = false
@@ -51,7 +52,7 @@ class MainActivity : AppCompatActivity() {
                     announcementItems.addAll(it)
                     adapter.notifyDataSetChanged()
                     binding.fabRefresh.visibility = View.VISIBLE
-                    Toast.makeText(this@MainActivity, "Done. Count: ${it.size}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ItemListActivity, "Done. Count: ${it.size}", Toast.LENGTH_SHORT).show()
                     unbindService(this)
                 }
             }
@@ -59,7 +60,7 @@ class MainActivity : AppCompatActivity() {
             override fun onServiceDisconnected(name: ComponentName?) {
                 if (!done) {
                     binding.fabRefresh.visibility = View.VISIBLE
-                    Toast.makeText(this@MainActivity, "FAILED", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ItemListActivity, "FAILED", Toast.LENGTH_SHORT).show()
                     unbindService(this)
                 }
             }

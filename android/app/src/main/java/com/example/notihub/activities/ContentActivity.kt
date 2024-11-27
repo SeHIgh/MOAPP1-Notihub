@@ -1,13 +1,14 @@
-package com.example.notihub
+package com.example.notihub.activities
 
 import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.example.notihub.databinding.ActivityDetailBinding
+import com.example.notihub.R
+import com.example.notihub.databinding.ActivityContentBinding
 import com.example.notihub.parsers.KNUAnnouncement
 import com.example.notihub.parsers.KNUAnnouncementSource
 
-class DetailActivity : AppCompatActivity() {
+class ContentActivity : AppCompatActivity() {
     companion object {
         const val DATA = "DATA"
     }
@@ -15,7 +16,7 @@ class DetailActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // enableEdgeToEdge()
-        val binding = ActivityDetailBinding.inflate(layoutInflater)
+        val binding = ActivityContentBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
         // ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->

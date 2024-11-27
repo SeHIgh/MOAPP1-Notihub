@@ -1,5 +1,4 @@
 import kotlin.math.exp
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 
@@ -16,9 +15,6 @@ class UserPreference {
 //            val timeDifference = (currentTime - notification.timestamp).days.inWholeDays
 //            val decayFactor = exp(-0.1 * timeDifference)  // 시간에 따라 가중치가 줄어드는 지수 함수
 //            val newWeight = keywordWeights.getOrPut(keyword) { KeywordWeight(keyword, 0.0) } // 가중치 0.0부분을 기존에 있던 단어들의 모든 가중치의 평균 혹은 75th percentile 값을 적용시켜야 함.
-//
-//
-//
 //
 //            // 기존 가중치에 새로운 가중치를 합산하여 업데이트
 //            newWeight.weight = newWeight.weight * decayFactor + 1.0

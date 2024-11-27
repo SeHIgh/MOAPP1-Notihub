@@ -1,16 +1,20 @@
-package com.example.notihub
+package com.example.notihub.adapters
 
 import android.content.Context
 import android.content.Intent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.example.notihub.R
+import com.example.notihub.activities.ContentActivity
 import com.example.notihub.databinding.ItemMainBinding
 import com.example.notihub.parsers.KNUAnnouncement
 import com.example.notihub.parsers.KNUAnnouncementSource
 
-class MainRecyclerAdapter(private val items: MutableList<KNUAnnouncement>):
+class MainListAdapter(private val items: MutableList<KNUAnnouncement>):
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private class MainViewHolder(val binding: ItemMainBinding): RecyclerView.ViewHolder(binding.root)
+
     private lateinit var context: Context
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -34,9 +38,9 @@ class MainRecyclerAdapter(private val items: MutableList<KNUAnnouncement>):
         binding.textViewSource.text = boardText
 
         binding.root.setOnClickListener {
-            context.startActivity(Intent(context, DetailActivity::class.java).apply {
-                putExtra(DetailActivity.DATA, items[position])
-            })
+            context.startActivity(Intent(context, ContentActivity::class.java).putExtra(
+                ContentActivity.DATA, items[position]
+            ))
         }
     }
 

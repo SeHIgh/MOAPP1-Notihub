@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -15,9 +16,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Notihub"
         tools:targetApi="31">
-        <activity
-            android:name=".DetailActivity"
-            android:exported="false" />
 
         <service
             android:name=".parsers.InfoPollingService"
@@ -25,7 +23,23 @@
             android:exported="false" />
 
         <activity
-            android:name=".MainActivity"
+            android:name=".activities.ContentActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.IntroActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.ItemListActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.SelectPreferenceActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
