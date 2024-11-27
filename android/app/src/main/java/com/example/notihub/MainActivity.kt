@@ -75,8 +75,13 @@ class MainActivity : AppCompatActivity() {
             announcementItems.clear()
             adapter.notifyDataSetChanged()
 
+            val intent = Intent(applicationContext, InfoPollingService::class.java)
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O)
+                startForegroundService(intent)
+            else
+                startService(intent)
             bindService(
-                Intent(this, InfoPollingService::class.java),
+                intent,
                 infoPollingServiceConnection,
                 Context.BIND_AUTO_CREATE
             )

@@ -1,12 +1,22 @@
 package com.example.notihub.parsers
 
+import android.app.AlarmManager
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Intent
 import android.os.Binder
+import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.example.notihub.BuildConfig
+import com.example.notihub.DetailActivity
+import com.example.notihub.R
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.gson.Gson
 import kotlinx.coroutines.Deferred
@@ -47,6 +57,13 @@ class InfoPollingService : LifecycleService() {
             "아래 글을 처리해서 아래의 json 형식으로 알려 줘." +
             "{\"summary\": \"5문장으로 요약된 글\", \"keywords\": [\"가장중요한단어1\", ..., \"가장중요한단어5\"]}\n\n"
         private val FIVE_SECONDS = 5.seconds
+        const val START_SERVICE = 11
+        const val SERVICE_ID = 11
+        const val REFRESH_NOTIFICATION_ID = 11
+        const val REFRESH_NOTIFICATION_CHANNEL = "polling"
+        const val NEW_ITEM_NOTIFICATION_CHANNEL = "new-item"
+
+        var newItemNotificationId = 100;
     }
 
     private val binders = mutableListOf<InfoBinder>()
@@ -58,6 +75,7 @@ class InfoPollingService : LifecycleService() {
 
     override fun onCreate() {
         super.onCreate()
+        startForeground(SERVICE_ID, showPollingNotification())
         job = launchJob()
     }
 
@@ -76,7 +94,7 @@ class InfoPollingService : LifecycleService() {
     }
 
     private fun launchJob() = lifecycleScope.launch(Dispatchers.Default) {
-        val geminiChannel = Channel<KNUAnnouncement>()
+        val geminiChannel = Channel<KNUAnnouncement>(Channel.Factory.UNLIMITED)
         val newItems = mutableListOf<KNUAnnouncement>()
         val jobs = mutableListOf<Deferred<List<KNUAnnouncement>>>()
         val geminiJob: Job = launch { geminiLoop(geminiChannel) }
@@ -117,13 +135,31 @@ class InfoPollingService : LifecycleService() {
 
         // TODO: 유사도
 
-        // TODO: 새 글 알림
+        newItems.forEach { showNewAnnouncementNotification(it) }
         for (binder in binders) {
             binder.onNewItems(newItems)
         }
 
-        // TODO: AlarmManager
+        val nextStartTime: Long = SystemClock.elapsedRealtime() + 1800_000
+        (getSystemService(ALARM_SERVICE) as AlarmManager).setWindow(
+            AlarmManager.ELAPSED_REALTIME_WAKEUP,
+            nextStartTime, nextStartTime + 600_000,
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
+                PendingIntent.getForegroundService(
+                    applicationContext, START_SERVICE,
+                    Intent(applicationContext, this@InfoPollingService::class.java),
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+            } else {
+                PendingIntent.getService(
+                    applicationContext, START_SERVICE,
+                    Intent(applicationContext, this@InfoPollingService::class.java),
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+            }
+        )
 
+        stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
@@ -152,6 +188,72 @@ class InfoPollingService : LifecycleService() {
                     delay(FIVE_SECONDS - elapsedTime)
             }
         }
+
+    private fun showPollingNotification(): Notification {
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val builder: NotificationCompat.Builder =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    REFRESH_NOTIFICATION_CHANNEL,
+                    getString(R.string.polling_channel),
+                    NotificationManager.IMPORTANCE_MIN
+                )
+                channel.setShowBadge(false)
+                manager.createNotificationChannel(channel)
+                NotificationCompat.Builder(this, REFRESH_NOTIFICATION_CHANNEL)
+            } else {
+                NotificationCompat.Builder(this)
+            }
+
+        builder.setSmallIcon(applicationInfo.icon)
+        builder.setWhen(System.currentTimeMillis())
+        builder.setPriority(NotificationCompat.PRIORITY_LOW)
+        builder.setContentTitle(getString(R.string.polling_notification_title))
+        builder.setContentText(getString(R.string.polling_notification_description))
+
+        val intent = Intent(applicationContext, this::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this, 10, intent, PendingIntent.FLAG_IMMUTABLE
+        )
+        builder.setContentIntent(pendingIntent)
+
+        val notification = builder.build()
+        manager.notify(REFRESH_NOTIFICATION_ID, notification)
+        return notification
+    }
+
+    private fun showNewAnnouncementNotification(newItem: KNUAnnouncement) {
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val builder: NotificationCompat.Builder =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    NEW_ITEM_NOTIFICATION_CHANNEL,
+                    getString(R.string.polling_channel),
+                    NotificationManager.IMPORTANCE_HIGH
+                )
+                channel.setShowBadge(false)
+                manager.createNotificationChannel(channel)
+                NotificationCompat.Builder(this, NEW_ITEM_NOTIFICATION_CHANNEL)
+            } else {
+                NotificationCompat.Builder(this)
+            }
+
+        builder.setSmallIcon(applicationInfo.icon)
+        builder.setWhen(System.currentTimeMillis())
+        builder.setContentTitle(newItem.title)
+        builder.setContentText(newItem.summary)
+
+        val pendingIntent = PendingIntent.getActivity(
+            this, newItemNotificationId,
+            Intent(applicationContext, DetailActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(DetailActivity.DATA, newItem),
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        builder.setContentIntent(pendingIntent)
+
+        manager.notify(newItemNotificationId++, builder.build())
+    }
 
     // private suspend fun getNewAnnouncements(
     //     getList: () -> List<KNUAnnouncement>,
