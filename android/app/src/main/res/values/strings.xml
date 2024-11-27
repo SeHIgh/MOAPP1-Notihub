@@ -1,12 +1,15 @@
 <resources>
-    <string name="app_name">KNU_MobApp1_Proj_Team3</string>
-    <string name="permission_desc">permission_desc</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="Intro_title">대학생 필수 맞춤형 알림 앱</string>
-    <string name="Intro1_content1">너무 많아 복잡한 알림</string>
-    <string name="Intro1_content2">이제부턴 관심사에 맞는 알림만 받아보세요!</string>
-    <string name="Intro2_content">평소 관심 있는 분야나 새롭게 알고 싶은 분야, 정보 제공을 받고 싶은 분야를 선택하면 선택한 분야와 관련된 정보를 알림으로 띄워주고, 그 알림들은 앱을 실행하면 볼 수 있습니다.</string>
-    <string name="Intro3_content">그럼 시작해 볼까요?</string>
+    <string name="app_name">Notihub</string>
+    <string name="cse_name">CSE</string>
+    <string name="it_name">IT</string>
+    <string name="polling_channel">Fetching New Announcement</string>
+    <string name="polling_notification_title">Finding new announcements…</string>
+    <string name="polling_notification_description">The app is finding new notifications now.</string>
+    <string name="announcement_channel">New Announcement</string>
+    <string name="Intro_title" translatable="false">대학생 필수 맞춤형 알림 앱</string>
+    <string name="Intro1_content1" translatable="false">너무 많아 복잡한 알림</string>
+    <string name="Intro1_content2" translatable="false">이제부턴 관심사에 맞는 알림만 받아보세요!</string>
+    <string name="Intro2_content" translatable="false">평소 관심 있는 분야나 새롭게 알고 싶은 분야, 정보 제공을 받고 싶은 분야를 선택하면 선택한 분야와 관련된 정보를 알림으로 띄워주고, 그 알림들은 앱을 실행하면 볼 수 있습니다.</string>
+    <string name="Intro3_content" translatable="false">그럼 시작해 볼까요?</string>
 
 </resources>
