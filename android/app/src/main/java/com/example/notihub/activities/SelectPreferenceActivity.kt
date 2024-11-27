@@ -33,9 +33,11 @@ class SelectPreferenceActivity : AppCompatActivity() {
         val buttonFinish: Button = binding.finishButton
         buttonFinish.setOnClickListener {
             val selectedKeywords = adapter.getSelectedKeywords() // 선택된 키워드들 가져오기
-            val intent = Intent(this, ItemListActivity::class.java)
-            intent.putStringArrayListExtra("selected_keywords", ArrayList(selectedKeywords)) // 키워드 리스트 전달
-            startActivity(intent)
+            startActivity(
+                Intent(this, MainActivity::class.java)
+                    .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    .putStringArrayListExtra("selected_keywords", ArrayList(selectedKeywords))
+            )
         }
     }
 }

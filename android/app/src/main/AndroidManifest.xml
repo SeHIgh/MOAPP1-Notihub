@@ -31,10 +31,6 @@
             android:exported="false" />
 
         <activity
-            android:name=".activities.ItemListActivity"
-            android:exported="false" />
-
-        <activity
             android:name=".activities.SelectPreferenceActivity"
             android:exported="false" />
 
