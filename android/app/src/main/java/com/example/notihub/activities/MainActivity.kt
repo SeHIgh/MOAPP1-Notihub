@@ -141,16 +141,21 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerView.adapter = adapter
         binding.recyclerView.addItemDecoration(
             DividerItemDecoration(
-            this, LinearLayoutManager.VERTICAL
-        )
+                this, LinearLayoutManager.VERTICAL
+            )
         )
         binding.fabRefresh.setOnClickListener {
             binding.fabRefresh.visibility = View.INVISIBLE
             announcementItems.clear()
             adapter.notifyDataSetChanged()
 
+            val intent = Intent(applicationContext, InfoPollingService::class.java)
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O)
+                startForegroundService(intent)
+            else
+                startService(intent)
             bindService(
-                Intent(this, InfoPollingService::class.java),
+                intent,
                 infoPollingServiceConnection,
                 Context.BIND_AUTO_CREATE
             )

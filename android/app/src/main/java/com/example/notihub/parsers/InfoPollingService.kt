@@ -15,8 +15,8 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.example.notihub.BuildConfig
-import com.example.notihub.DetailActivity
 import com.example.notihub.R
+import com.example.notihub.activities.ContentActivity
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.gson.Gson
 import kotlinx.coroutines.Deferred
@@ -245,9 +245,9 @@ class InfoPollingService : LifecycleService() {
 
         val pendingIntent = PendingIntent.getActivity(
             this, newItemNotificationId,
-            Intent(applicationContext, DetailActivity::class.java)
+            Intent(applicationContext, ContentActivity::class.java)
                 .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                .putExtra(DetailActivity.DATA, newItem),
+                .putExtra(ContentActivity.DATA, newItem),
             PendingIntent.FLAG_IMMUTABLE
         )
         builder.setContentIntent(pendingIntent)

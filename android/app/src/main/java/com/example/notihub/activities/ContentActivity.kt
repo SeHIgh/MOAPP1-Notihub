@@ -17,12 +17,12 @@ class ContentActivity : AppCompatActivity() {
         const val DATA = "DATA"
     }
 
-    lateinit var binding: ActivityDetailBinding
+    lateinit var binding: ActivityContentBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // enableEdgeToEdge()
-        binding = ActivityDetailBinding.inflate(layoutInflater)
+        binding = ActivityContentBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
