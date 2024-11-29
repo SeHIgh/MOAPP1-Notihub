@@ -7,12 +7,12 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
 @Database(
-    entities = [KNUAnnouncementEntity::class, UserInterestEntity::class], version = 1
+    entities = [KNUAnnouncementEntity::class, UserPreferenceEntity::class], version = 1
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun knuAnnouncementDao(): KNUAnnouncementDao
-    abstract fun userInterestDao(): UserInterestDao
+    abstract fun userPreferenceDao(): UserPreferenceDao
 
     companion object {
         @Volatile

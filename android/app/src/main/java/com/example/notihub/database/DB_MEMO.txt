@@ -71,21 +71,16 @@
 있습니다. 기존 유형 변환기가 기본값보다 우선하지만 enum의 유형 변환기를
 아직 정의하지 않은 경우 유형 변환기를 정의할 필요가 없습니다.
 
-# UserInterest
+# UserPreference
 
 - 자료형 :
-    @PrimaryKey val id: Int, //  = KNUAnnouncementEntity 의 id
-    val source: KNUAnnouncementSource,
-    val title: String,
-    val time: String,
-    val bodyUrl: String,        // 필요 여부 논의
-    val body: String = "",      // 필요 여부 논의
-    val summary: String = "",   // 필요 여부 논의
-    val keywords: List<String>,
+    @PrimaryKey val keyword: String,  // 가중치 부여할 단어
+    var weight: Int  // 가중치 값 (0 초과)
     val weight: Double = 0.0, // 초기 가중치
-    val feedback: String = "" // 피드백 ("like"/"dislike"/"")
+    val feedback: Int = 0 // 피드백: 좋아요(+1) / 싫어요(-1) / 무응답(0)
     // 논의 필요
-    // feedback의 경우 좋아요 : +1, 싫어요 : -1, 무응답 : 0 으로 Int로 기록 하는 방안
+    // 날짜 계산이 새로운 알고리즘에서 사라진 상태인데, 알고리즘 확정 과정에서 추가가능
+    // val time: String = "2024-01-01 00:00",  // 변환 필요 : Time 객체 -> String
 
 - 유형 변환기 :
     ~ keywords 들을 json 형태로 변환
@@ -102,24 +97,6 @@
     @TypeConverter
     fun fromTime(time: KNUAnnouncement.Time): String {
         return time.toString()  // 이미 toString() 메서드가 있으므로 이를 사용
-    }
-
-    // 논의 필요 : 이건 굳이 필요한 가?
-    // String을 Time 객체로 변환
-    @TypeConverter
-    fun toTime(timeString: String): KNUAnnouncement.Time {
-        // "yyyy-MM-dd HH:mm" 형식으로 파싱하여 Time 객체로 변환
-        val parts = timeString.split(" ")
-        val dateParts = parts[0].split("-")
-        val timeParts = parts[1].split(":")
-
-        return KNUAnnouncement.Time(
-            year = dateParts[0].toInt(),
-            month = dateParts[1].toInt(),
-            day = dateParts[2].toInt(),
-            hour = timeParts[0].toInt(),
-            minute = timeParts[1].toInt()
-        )
     }
 
 - 쿼리문 :
