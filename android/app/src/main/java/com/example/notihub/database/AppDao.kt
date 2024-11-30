@@ -8,7 +8,7 @@ interface KNUAnnouncementDao {
     suspend fun insertAnnouncement(announcement: KNUAnnouncementEntity)
 
     // id로 공지사항 조회
-    @Query("SELECT * FROM knu_announcement WHERE id = :id")
+    @Query("SELECT * FROM knu_announcement WHERE id = :id AND source = :source")
     suspend fun getAnnouncementById(id: Int): KNUAnnouncementEntity?
 
     // id로 공지사항 삭제

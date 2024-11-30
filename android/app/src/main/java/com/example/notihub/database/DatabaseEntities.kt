@@ -27,9 +27,6 @@ data class KNUAnnouncementEntity(
 data class UserPreferenceEntity(
     @PrimaryKey val keyword: String,  // 가중치 부여할 단어
     var weight: Double = 0.0,  // 초기 가중치 (기본값 0.0)
-    var feedback: Int = 0  // 피드백: 좋아요(+1), 싫어요(-1), 무응답(0)
-    // val time: String = "2024-01-01 00:00",  // 변환 필요 : Time 객체 -> String
-
 )
 
 // UserPreferenceEntity 변경 사항:
