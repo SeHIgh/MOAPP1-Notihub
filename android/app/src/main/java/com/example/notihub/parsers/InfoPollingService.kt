@@ -27,6 +27,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
@@ -63,7 +64,7 @@ class InfoPollingService : LifecycleService() {
         const val REFRESH_NOTIFICATION_CHANNEL = "polling"
         const val NEW_ITEM_NOTIFICATION_CHANNEL = "new-item"
 
-        var newItemNotificationId = 100;
+        var newItemNotificationId = 100
     }
 
     private val binders = mutableListOf<InfoBinder>()
@@ -140,10 +141,10 @@ class InfoPollingService : LifecycleService() {
             binder.onNewItems(newItems)
         }
 
-        val nextStartTime: Long = SystemClock.elapsedRealtime() + 1800_000
+        val nextStartTime = SystemClock.elapsedRealtime() + 30.minutes.inWholeMilliseconds
         (getSystemService(ALARM_SERVICE) as AlarmManager).setWindow(
             AlarmManager.ELAPSED_REALTIME_WAKEUP,
-            nextStartTime, nextStartTime + 600_000,
+            nextStartTime, nextStartTime + 15.minutes.inWholeMilliseconds,
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
                 PendingIntent.getForegroundService(
                     applicationContext, START_SERVICE,

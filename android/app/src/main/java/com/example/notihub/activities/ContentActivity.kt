@@ -21,7 +21,6 @@ class ContentActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // enableEdgeToEdge()
         binding = ActivityContentBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
@@ -34,18 +33,18 @@ class ContentActivity : AppCompatActivity() {
             setDisplayHomeAsUpEnabled(true)
             setDisplayShowHomeEnabled(true)
         }
-        binding.toolbar.setNavigationOnClickListener {
-            startActivity(
-                Intent(applicationContext, MainActivity::class.java)
-                    .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            )
-        }
-        onBackPressedDispatcher.addCallback {
-            startActivity(
-                Intent(applicationContext, MainActivity::class.java)
-                    .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            )
-        }
+        // binding.toolbar.setNavigationOnClickListener {
+        //     startActivity(
+        //         Intent(applicationContext, MainActivity::class.java)
+        //             .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        //     )
+        // }
+        // onBackPressedDispatcher.addCallback {
+        //     startActivity(
+        //         Intent(applicationContext, MainActivity::class.java)
+        //             .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        //     )
+        // }
     }
 
     override fun onStart() {
