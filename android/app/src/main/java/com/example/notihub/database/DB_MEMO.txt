@@ -1,0 +1,120 @@
+# KNUAnnouncement
+
+- 입력받는 자료형 :
+    val source: KNUAnnouncementSource,
+    val id: Int,
+    val title: String,
+    val time: Time, // return "$year-${"%02d".format(month)}-${"%02d".format(day)} ${"%02d".format(hour)}:${"%02d".format(minute)}",
+    val bodyUrl: String,
+    var body: String,
+    var summary: String,
+    val keywords: MutableList<String>,
+
+    enum class KNUAnnouncementSource {CSE, IT}
+
+- 유형 변환기 :
+    ~ keywords 들을 json 형태로 변환
+    @TypeConverter
+    fun fromKeywords(keywords: MutableList<String>): String = Gson().toJson(keywords)
+
+    @TypeConverter
+    fun toKeywords(json: String): MutableList<String> {
+        val type = object : TypeToken<List<String>>() {}.type
+        return Gson().fromJson(json, type)
+    }
+
+    // KNUAnnouncement 는 time 을 Time 객체를 생성해서 관리하지만,
+    // Room 에서는 String 으로 관리해야 하기 떄문에
+    // Time 객체를 String으로 변환
+    @TypeConverter
+    fun fromTime(time: KNUAnnouncement.Time): String {
+        return time.toString()  // 이미 toString() 메서드가 있으므로 이를 사용
+    }
+
+    // String을 Time 객체로 변환
+    @TypeConverter
+    fun toTime(timeString: String): KNUAnnouncement.Time {
+        // "yyyy-MM-dd HH:mm" 형식으로 파싱하여 Time 객체로 변환
+        val parts = timeString.split(" ")
+        val dateParts = parts[0].split("-")
+        val timeParts = parts[1].split(":")
+
+        return KNUAnnouncement.Time(
+            year = dateParts[0].toInt(),
+            month = dateParts[1].toInt(),
+            day = dateParts[2].toInt(),
+            hour = timeParts[0].toInt(),
+            minute = timeParts[1].toInt()
+        )
+    }
+
+- 쿼리문 :
+    // 데이터 삽입 시 충돌 발생 경우, 처리 방법 설정 (REPLACE : 충돌 발생 시 기본 데이터 유지)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAnnouncement(announcement: KNUAnnouncementEntity)
+
+    // id로 공지사항 조회
+    @Query("SELECT * FROM knu_announcement WHERE id = :id")
+    suspend fun getAnnouncementById(id: Int): KNUAnnouncementEntity?
+
+    // id로 공지사항 삭제
+    @Query("DELETE FROM knu_announcement WHERE id = :id")
+    suspend fun deleteAnnouncementById(id: Int)
+
+    // 시간 순(최신 순)으로 모든 공지사항 조회
+    @Query("SELECT * FROM knu_announcement ORDER BY time DESC")
+    suspend fun getAllAnnouncements(): List<KNUAnnouncementEntity>
+    // SQLite의 TEXT 타입 정렬 규칙에 따라 사전식 정렬(lexicographical order)을 사용
+    // "YYYY-MM-DD HH:mm" 형식이라 사전식 정렬 포맷과 동일
+
+- 참고: Room 2.3 이상에는 enum을 유지하기 위한 기본 유형 변환기가 포함되어
+있습니다. 기존 유형 변환기가 기본값보다 우선하지만 enum의 유형 변환기를
+아직 정의하지 않은 경우 유형 변환기를 정의할 필요가 없습니다.
+
+# UserPreference
+
+- 자료형 :
+    @PrimaryKey val keyword: String,  // 가중치 부여할 단어
+    var weight: Int  // 가중치 값 (0 초과)
+    val weight: Double = 0.0, // 초기 가중치
+    val feedback: Int = 0 // 피드백: 좋아요(+1) / 싫어요(-1) / 무응답(0)
+    // 논의 필요
+    // 날짜 계산이 새로운 알고리즘에서 사라진 상태인데, 알고리즘 확정 과정에서 추가가능
+    // val time: String = "2024-01-01 00:00",  // 변환 필요 : Time 객체 -> String
+
+- 유형 변환기 :
+    ~ keywords 들을 json 형태로 변환
+    @TypeConverter
+    fun fromKeywords(keywords: MutableList<String>): String = Gson().toJson(keywords)
+
+    @TypeConverter
+    fun toKeywords(json: String): MutableList<String> {
+        val type = object : TypeToken<List<String>>() {}.type
+        return Gson().fromJson(json, type)
+    }
+
+    // Time 객체를 String으로 변환
+    @TypeConverter
+    fun fromTime(time: KNUAnnouncement.Time): String {
+        return time.toString()  // 이미 toString() 메서드가 있으므로 이를 사용
+    }
+
+- 쿼리문 :
+    // 데이터 삽입 시 충돌 발생 경우, 처리 방법 설정 (REPLACE : 충돌 발생 시 기본 데이터 유지)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrUpdatePreference(preference: UserPreferenceEntity)
+
+    // id로 선호도 조회
+    @Query("SELECT * FROM user_preference WHERE id = :id")
+    suspend fun getPreferenceById(id: Int): UserPreferenceEntity?
+
+    // id로 선호도 삭제
+    @Query("DELETE FROM user_preference WHERE id = :id")
+    suspend fun deletePreferenceById(id: Int)
+
+    // 가중치 높은 순으로 모든 선호도 조회
+    @Query("SELECT * FROM user_preference ORDER BY weight DESC")
+    suspend fun getAllPreferences(): List<UserPreferenceEntity>
+
+    // 논의 필요
+    // 여기서 추가로 등수를 끊어서 조회하도록 하는 쿼리문 추가 여부

@@ -1,4 +1,6 @@
 package com.example.notihub.parsers
+import kotlinx.parcelize.Parcelize
+
 
 import android.os.Build
 import android.os.Parcel

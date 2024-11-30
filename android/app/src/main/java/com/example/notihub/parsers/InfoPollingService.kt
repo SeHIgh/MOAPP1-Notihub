@@ -1,46 +1,19 @@
 package com.example.notihub.parsers
 
-import android.app.AlarmManager
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.Intent
-import android.os.Binder
-import android.os.Build
-import android.os.IBinder
-import android.os.SystemClock
-import android.util.Log
-import androidx.core.app.NotificationCompat
-import androidx.lifecycle.LifecycleService
-import androidx.lifecycle.lifecycleScope
-import com.example.notihub.BuildConfig
-import com.example.notihub.R
-import com.example.notihub.activities.ContentActivity
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.gson.Gson
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.measureTime
+
 
 class InfoPollingService : LifecycleService() {
-    class InfoBinder: Binder() {
+    class InfoBinder : Binder() {
         private val newItemsCallback = mutableListOf<(List<KNUAnnouncement>) -> Unit>()
 
         fun addNewItemsCallback(callback: (List<KNUAnnouncement>) -> Unit) {
             newItemsCallback.add(callback)
         }
+
         fun removeNewItemsCallback(callback: (List<KNUAnnouncement>) -> Unit) {
             newItemsCallback.remove(callback)
         }
+
         suspend fun onNewItems(newItems: List<KNUAnnouncement>) {
             for (callback in newItemsCallback) {
                 withContext(Dispatchers.Main.immediate) { callback(newItems) }
@@ -56,7 +29,7 @@ class InfoPollingService : LifecycleService() {
     companion object {
         private const val PROMPT_HEADER =
             "아래 글을 처리해서 아래의 json 형식으로 알려 줘." +
-            "{\"summary\": \"5문장으로 요약된 글\", \"keywords\": [\"가장중요한단어1\", ..., \"가장중요한단어5\"]}\n\n"
+                    "{\"summary\": \"5문장으로 요약된 글\", \"keywords\": [\"가장중요한단어1\", ..., \"가장중요한단어5\"]}\n\n"
         private val FIVE_SECONDS = 5.seconds
         const val START_SERVICE = 11
         const val SERVICE_ID = 11
@@ -73,6 +46,10 @@ class InfoPollingService : LifecycleService() {
         apiKey = BuildConfig.GEMINI_API_KEY
     )
     private var job: Job? = null
+
+    // DB: lazy 를 통해 필요한 시점에만 데이터베이스와 연결되도록 함
+    private val announcementDao by lazy { AppDatabase.getDatabase(applicationContext).knuAnnouncementDao() }
+    private val userPreferenceDao by lazy { AppDatabase.getDatabase(applicationContext).userPreferenceDao() }
 
     override fun onCreate() {
         super.onCreate()
@@ -103,8 +80,13 @@ class InfoPollingService : LifecycleService() {
         jobs.add(async {
             val announcements = getKNUCSEAnnouncementList()
             // TODO: 새 글인지 확인
-            // for (announcement in announcements) {
-            for ((i, announcement) in announcements.withIndex()) {
+            // DB: 기존의 공지 데이터베이스를 탐색하여 존재 한다면 리스트에서 제외 (중복 방지)
+            val newAnnouncements = announcements.filter { announcement ->
+                val existingEntity = announcementDao.getAnnouncementById(announcement.id)
+                existingEntity == null // Room DB -> 조회 결과 없는 경우 null 반환
+            }
+
+            for ((i, announcement) in newAnnouncements.withIndex()) {
                 launch {
                     getKNUCSEAnnouncementDetail(announcement)
                     // if (announcement.body.isNotEmpty())
@@ -117,7 +99,13 @@ class InfoPollingService : LifecycleService() {
         jobs.add(async {
             val announcements = getKNUITAnnouncementList()
             // TODO: 새 글인지 확인
-            for (announcement in announcements) {
+            // DB: 기존의 공지 데이터베이스를 탐색하여 존재 한다면 리스트에서 제외 (중복 방지)
+            val newAnnouncements = announcements.filter { announcement ->
+                val existingEntity = announcementDao.getAnnouncementById(announcement.id)
+                existingEntity == null
+            }
+            // TODO: 위와 다른 이유?
+            for (announcement in newAnnouncements) {
                 launch {
                     getKNUITAnnouncementDetail(announcement)
                     // if (announcement.body.isNotEmpty())
@@ -134,7 +122,14 @@ class InfoPollingService : LifecycleService() {
         geminiJob.join()
         newItems.sort()
 
-        // TODO: 유사도
+        // DB: 데이터베이스에 새로운 알림 저장
+        // TODO: 위치 수정
+        saveAnnouncementsToDB(newItems)
+
+        // TODO: 가중치 계산 반영
+        // DB: 알림 처리 및 피드백 수집
+        // TODO: 위치 수정
+        handleNotifications(newItems)
 
         newItems.forEach { showNewAnnouncementNotification(it) }
         for (binder in binders) {
@@ -170,7 +165,10 @@ class InfoPollingService : LifecycleService() {
             for (announcement in channel) {
                 // announcement.summary = announcement.body
                 val elapsedTime = measureTime {
-                    Log.d("Notihub::Gemini", "URL: ${announcement.bodyUrl} | Body: ${announcement.body}")
+                    Log.d(
+                        "Notihub::Gemini",
+                        "URL: ${announcement.bodyUrl} | Body: ${announcement.body}"
+                    )
                     var response = geminiModel.generateContent(
                         PROMPT_HEADER + announcement.body
                     ).text ?: ""
@@ -271,4 +269,82 @@ class InfoPollingService : LifecycleService() {
     //         }
     //     }
     // }
+
+    // DB: KNUAnnouncement을 KNUAnnouncementEntity로 변환하는 함수
+    // suspand 필요 유무?
+    private fun convertToKNUAnnouncementEntity(announcement: KNUAnnouncement): KNUAnnouncementEntity {
+        return KNUAnnouncementEntity(
+            source = announcement.source,
+            id = announcement.id,
+            title = announcement.title,
+            time = announcement.time.toString(),
+            bodyUrl = announcement.bodyUrl,
+            body = announcement.body,
+            summary = announcement.summary,
+            keywords = announcement.keywords
+        )
+    }
+
+    // DB: String -> timestamp  변환 함수
+    fun convertToTimestamp(timeString: String): Long {
+        // 원하는 날짜 형식에 맞게 SimpleDateFormat 설정
+        val format = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+
+        // timeString을 Date 객체로 변환
+        val date: Date = format.parse(timeString)
+
+        // Date 객체에서 타임스탬프(밀리초) 추출
+        return date.time
+    }
+
+    // DB: 데이터베이스에 새로운 공지사항 저장
+    private suspend fun saveAnnouncementsToDB(newItems: List<KNUAnnouncement>) {
+        for (announcement in newItems) {
+            val announcementEntity = convertToKNUAnnouncementEntity(announcement)
+            announcementDao.insertAnnouncement(announcementEntity)
+            Log.d("DB", "새로운 알림이 저장됨: ${announcementEntity.title}")
+        }
+    }
+
+    // DB: 알림 처리 및 사용자 피드백 수집
+    private suspend fun handleNotifications(newItems: List<KNUAnnouncement>) {
+        for (announcement in newItems) {
+            // 알림 전송 - 새로운 글의 경우 바로 전송
+            showNewAnnouncementNotification(announcement)
+
+            // 사용자 선호도와 관련된 UserPreferenceEntity 생성
+            val userPreferences = userPreferenceDao.getAllPreferences()
+            for (keyword in announcement.keywords) {
+                val existingPreference = userPreferences.find { it.keyword == keyword }
+                // 기존에 없는 키워드라면 가중치 0 초기화
+                val userPreferenceEntity = existingPreference ?: UserPreferenceEntity(keyword = keyword, weight = 0.0)
+
+                // TODO: 사용자 피드백 받는 방식 논의
+                val userFeedback = "" // 실제 피드백 입력 방법에 따라 변경 (예: "like")
+                processNotificationFeedback(userPreferenceDao, userPreferenceEntity, userFeedback)
+            }
+        }
+    }
+
+    // DB: 가중치 계산 및 피드백 처리 함수
+    private suspend fun processNotificationFeedback(
+        userPreferenceDao: UserPreferenceDao,
+        userPreferenceEntity: UserPreferenceEntity,
+        feedback: String
+    ) {
+        // 1. 사용자 선호도 데이터베이스에서 기존 키워드를 조회
+        val existingPreference = userPreferenceDao.getPreferenceByKeyword(userPreferenceEntity.keyword)
+
+        // 2. 알고리즘을 통해 가중치 계산 및 피드백 처리 (calculateWeight 는 추후 알고리즘 함수로 대체)
+        // 알고리즘 리턴값은 최종 계산한 가중치로
+        val finalWeight = calculateWeight(userPreferenceEntity.keyword, existingPreference?.weight ?: 0.0, feedback)
+
+        // 3. 업데이트된 데이터를 UserPreferenceEntity에 갱신
+        val updatedPreference = userPreferenceEntity.copy(
+            weight = finalWeight // 알고리즘에서 계산된 새로운 가중치 값 설정
+        )
+
+        // 4. 업데이트된 선호도 데이터베이스에 저장
+        userPreferenceDao.insertOrUpdatePreference(updatedPreference)
+    }
 }
