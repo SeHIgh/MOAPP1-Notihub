@@ -1,5 +1,42 @@
 package com.example.notihub.parsers
 
+import android.app.AlarmManager
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Intent
+import android.os.Binder
+import android.os.Build
+import android.os.IBinder
+import android.os.SystemClock
+import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.lifecycleScope
+import com.example.notihub.BuildConfig
+import com.example.notihub.R
+import com.example.notihub.activities.ContentActivity
+import com.example.notihub.database.AppDatabase
+import com.example.notihub.database.KNUAnnouncementEntity
+import com.example.notihub.database.UserPreferenceDao
+import com.example.notihub.database.UserPreferenceEntity
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.gson.Gson
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.measureTime
 
 
 class InfoPollingService : LifecycleService() {
@@ -72,7 +109,7 @@ class InfoPollingService : LifecycleService() {
     }
 
     private fun launchJob() = lifecycleScope.launch(Dispatchers.Default) {
-        val geminiChannel = Channel<KNUAnnouncement>(Channel.Factory.UNLIMITED)
+        val geminiChannel = Channel<KNUAnnouncement>(Channel.UNLIMITED)
         val newItems = mutableListOf<KNUAnnouncement>()
         val jobs = mutableListOf<Deferred<List<KNUAnnouncement>>>()
         val geminiJob: Job = launch { geminiLoop(geminiChannel) }
@@ -337,7 +374,8 @@ class InfoPollingService : LifecycleService() {
 
         // 2. 알고리즘을 통해 가중치 계산 및 피드백 처리 (calculateWeight 는 추후 알고리즘 함수로 대체)
         // 알고리즘 리턴값은 최종 계산한 가중치로
-        val finalWeight = calculateWeight(userPreferenceEntity.keyword, existingPreference?.weight ?: 0.0, feedback)
+        // val finalWeight = calculateWeight(userPreferenceEntity.keyword, existingPreference?.weight ?: 0.0, feedback)
+        val finalWeight = 0.0
 
         // 3. 업데이트된 데이터를 UserPreferenceEntity에 갱신
         val updatedPreference = userPreferenceEntity.copy(

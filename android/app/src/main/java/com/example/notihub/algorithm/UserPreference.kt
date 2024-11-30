@@ -11,7 +11,7 @@ data class KeywordWeight(
 )
 
 
-fun shouldNotify(newKeywords: List<String>, userKeywords: List<KeywordWeight>): Boolean {
+fun shouldNotify(newKeywords: List<String>, userKeywords: List<String>): Boolean {
     // 새 글 키워드 중 하나라도 사용자 키워드에 포함되면 true 반환
     return newKeywords.any { it in userKeywords }
 }
@@ -53,9 +53,9 @@ fun updateKeywordWeights(
     }
 
     // 최대 허용치를 초과하는 경우 비례 조정
-    val maxWeight = userKeywordWeights.maxOfOrNull { it.weight } ?: 0.0
+    val maxWeight = userKeywordWeights.maxOfOrNull { it.weight } ?: 0L
     if (maxWeight > maxWeightLimit) {
         val scale = maxWeightLimit / maxWeight
-        userKeywordWeights.forEach { it.weight *= scale }
+        userKeywordWeights.forEach { it.weight *= scale as Long }
     }
 }
