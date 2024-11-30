@@ -1,5 +1,7 @@
 package com.example.notihub.algorithm
 
+import com.example.notihub.MAX_WEIGHT_LINIT
+import com.example.notihub.WEIGHT_INCREMENT
 import com.example.notihub.database.UserPreferenceEntity
 
 
@@ -13,31 +15,26 @@ fun updateKeywordWeights(
     userKeywordWeights: MutableList<UserPreferenceEntity>,
     preferred: Boolean
 ) {
-    // 함수 내부에서 사용할 상수 정의
-    val maxWeightLimit = 10.0 // 최대 허용 가중치
-    val increment = 1.0       // 좋아요 시 증가 가중치
-    val decrement = 1.0       // 싫어요 시 감소 가중치
-
     if (preferred) {
         keywords.forEach { keyword ->
             val keywordWeight = userKeywordWeights.find { it.keyword == keyword }
             if (keywordWeight != null) {
-                keywordWeight.weight += increment
+                keywordWeight.weight += WEIGHT_INCREMENT
             } else {
-                userKeywordWeights.add(UserPreferenceEntity(keyword, increment))
+                userKeywordWeights.add(UserPreferenceEntity(keyword, WEIGHT_INCREMENT))
             }
         }
         val maxWeight = userKeywordWeights.maxOfOrNull { it.weight } ?: 0.0
-        if (maxWeight > maxWeightLimit) {
-            val scale = maxWeightLimit / maxWeight
-            userKeywordWeights.forEach { it.weight *= scale as Long }
+        if (maxWeight > MAX_WEIGHT_LINIT) {
+            val scale = MAX_WEIGHT_LINIT / maxWeight
+            userKeywordWeights.forEach { it.weight *= scale }
         }
     } else {
         keywords.forEach { keyword ->
             val keywordWeight = userKeywordWeights.find { it.keyword == keyword }
             if (keywordWeight != null) {
                 // 가중치 감소
-                keywordWeight.weight -= decrement
+                keywordWeight.weight -= WEIGHT_INCREMENT
                 if (keywordWeight.weight <= 0) {
                     userKeywordWeights.remove(keywordWeight)
                 }

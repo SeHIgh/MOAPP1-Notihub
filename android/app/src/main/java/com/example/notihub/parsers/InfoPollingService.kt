@@ -16,6 +16,7 @@ import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.example.notihub.BuildConfig
 import com.example.notihub.R
+import com.example.notihub.TOP_KEYWORDS
 import com.example.notihub.activities.ContentActivity
 import com.example.notihub.algorithm.shouldNotify
 import com.example.notihub.database.AppDatabase
@@ -75,7 +76,6 @@ class InfoPollingService : LifecycleService() {
         const val REFRESH_NOTIFICATION_ID = 11
         const val REFRESH_NOTIFICATION_CHANNEL = "polling"
         const val NEW_ITEM_NOTIFICATION_CHANNEL = "new-item"
-        const val TOP_KEYWORDS = 10
 
         var newItemNotificationId = 100
     }

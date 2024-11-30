@@ -5,13 +5,20 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.notihub.INITIAL_WEIGHT
 import com.example.notihub.R
 import com.example.notihub.adapters.KeywordAdapter
+import com.example.notihub.database.AppDatabase
 import com.example.notihub.databinding.ActivitySelectPreferenceBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class SelectPreferenceActivity : AppCompatActivity() {
+
+    private val userPreferenceDao by lazy { AppDatabase.getDatabase(applicationContext).userPreferenceDao() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,11 +39,14 @@ class SelectPreferenceActivity : AppCompatActivity() {
         // "시작하기" 버튼 클릭 시 ListActivity로 선택된 키워드들 전달
         val buttonFinish: Button = binding.finishButton
         buttonFinish.setOnClickListener {
-            val selectedKeywords = adapter.getSelectedKeywords() // 선택된 키워드들 가져오기
+            adapter.getSelectedKeywords().forEach {
+                lifecycleScope.launch(Dispatchers.Default) {
+                    userPreferenceDao.updateWeightByKeyword(it, INITIAL_WEIGHT)
+                }
+            }
             startActivity(
                 Intent(this, MainActivity::class.java)
                     .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    .putStringArrayListExtra("selected_keywords", ArrayList(selectedKeywords))
             )
         }
     }
