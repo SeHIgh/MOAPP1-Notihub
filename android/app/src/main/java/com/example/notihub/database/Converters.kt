@@ -3,6 +3,7 @@ package com.example.notihub.database
 import androidx.room.TypeConverter
 import com.example.notihub.parsers.KNUAnnouncement
 import com.example.notihub.parsers.KNUAnnouncementSource
+import com.example.notihub.parsers.Preference
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -14,18 +15,26 @@ class Converters {
     fun toKNUAnnouncementSource(name: String): KNUAnnouncementSource = KNUAnnouncementSource.valueOf(name)
 
     @TypeConverter
-    fun fromKeywords(keywords: MutableList<String>): String = Gson().toJson(keywords)
+    fun fromKeywords(keywords: List<String>): String = Gson().toJson(keywords)
 
     @TypeConverter
-    fun toKeywords(json: String): MutableList<String> {
+    fun toKeywords(json: String): List<String> {
         val type = object : TypeToken<List<String>>() {}.type
         return Gson().fromJson(json, type)
     }
 
+    @TypeConverter
+    fun fromPreference(source: Preference): String = source.name
+
+    @TypeConverter
+    fun toPreference(name: String): Preference = Preference.valueOf(name)
+
     // Time 객체를 String으로 변환
     @TypeConverter
     fun fromTime(time: KNUAnnouncement.Time): String {
-        return time.toString()  // 이미 toString() 메서드가 있으므로 이를 사용
+        return time.run {
+            "$year-${"%02d".format(month)}-${"%02d".format(day)} ${"%02d".format(hour)}:${"%02d".format(minute)}"
+        }
     }
 
     // String을 Time 객체로 변환
