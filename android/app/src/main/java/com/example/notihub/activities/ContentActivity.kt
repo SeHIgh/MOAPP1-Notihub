@@ -1,14 +1,18 @@
 package com.example.notihub.activities
 
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.View
+import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.example.notihub.R
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.notihub.databinding.ActivityContentBinding
+import com.example.notihub.parsers.InfoPollingService
 import com.example.notihub.parsers.KNUAnnouncement
 import com.example.notihub.parsers.KNUAnnouncementSource
 
@@ -45,6 +49,16 @@ class ContentActivity : AppCompatActivity() {
         //             .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         //     )
         // }
+
+        binding.likeButton.setOnClickListener {
+
+            Toast.makeText(this, "Like...", Toast.LENGTH_SHORT).show()
+        }
+        binding.hateButton.setOnClickListener {
+
+            Toast.makeText(this, "Hate...", Toast.LENGTH_SHORT).show()
+        }
+
     }
 
     override fun onStart() {
