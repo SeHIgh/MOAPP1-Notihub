@@ -1,0 +1,26 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.notihub.app-mergeDebugResources-35:/values-ko-rKR/values-ko-rKR.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\KwonGuTae\\Documents\\GitHub\\MOAPP1-Notihub\\android\\app\\src\\main\\res\\values-ko-rKR\\strings.xml",
+                    "from": {
+                        "startLines": "8,2,3,4,5,7,6",
+                        "startColumns": "4,4,4,4,4,4,4",
+                        "startOffsets": "390,57,103,147,189,313,243",
+                        "endColumns": "55,44,42,40,52,75,68",
+                        "endOffsets": "441,97,141,183,237,384,307"
+                    },
+                    "to": {
+                        "startLines": "2,3,4,5,6,7,8",
+                        "startColumns": "4,4,4,4,4,4,4",
+                        "startOffsets": "55,111,156,199,240,293,369",
+                        "endColumns": "55,44,42,40,52,75,68",
+                        "endOffsets": "106,151,194,235,288,364,433"
+                    }
+                }
+            ]
+        }
+    ]
+}

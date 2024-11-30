@@ -1,0 +1,42 @@
+[
+    {
+        "merged": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-mergeDebugResources-36:\\layout\\fragment_intro3.xml",
+        "source": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-main-39:\\layout\\fragment_intro3.xml"
+    },
+    {
+        "merged": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-mergeDebugResources-36:\\layout\\fragment_intro1.xml",
+        "source": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-main-39:\\layout\\fragment_intro1.xml"
+    },
+    {
+        "merged": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-mergeDebugResources-36:\\layout\\activity_select_preference.xml",
+        "source": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-main-39:\\layout\\activity_select_preference.xml"
+    },
+    {
+        "merged": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-mergeDebugResources-36:\\layout\\item_keyword.xml",
+        "source": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-main-39:\\layout\\item_keyword.xml"
+    },
+    {
+        "merged": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-mergeDebugResources-36:\\layout\\item_main.xml",
+        "source": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-main-39:\\layout\\item_main.xml"
+    },
+    {
+        "merged": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-mergeDebugResources-36:\\layout\\activity_content.xml",
+        "source": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-main-39:\\layout\\activity_content.xml"
+    },
+    {
+        "merged": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-mergeDebugResources-36:\\layout\\activity_intro.xml",
+        "source": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-main-39:\\layout\\activity_intro.xml"
+    },
+    {
+        "merged": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-mergeDebugResources-36:\\layout\\fragment_intro2.xml",
+        "source": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-main-39:\\layout\\fragment_intro2.xml"
+    },
+    {
+        "merged": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-mergeDebugResources-36:\\layout\\activity_main.xml",
+        "source": "C:\\IDC\\.gradle\\daemon\\8.9\\com.example.notihub.app-main-39:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "com.example.notihub.app-mergeDebugResources-36:/layout/activity_content.xml",
+        "source": "com.example.notihub.app-main-39:/layout/activity_content.xml"
+    }
+]

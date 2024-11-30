@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="announcement_channel">새 글 알림</string>
+    <string name="app_name">Notihub</string>
+    <string name="cse_name">컴퓨터학부</string>
+    <string name="it_name">IT대학</string>
+    <string name="polling_channel">새 글 가져오기</string>
+    <string name="polling_notification_description">새 글을 가져오는 중입니다</string>
+    <string name="polling_notification_title">새 글 가져오는 중...</string>
+</resources>
