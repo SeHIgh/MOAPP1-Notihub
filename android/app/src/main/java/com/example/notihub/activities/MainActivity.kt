@@ -17,13 +17,19 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.notihub.R
 import com.example.notihub.adapters.MainListAdapter
+import com.example.notihub.database.AppDatabase
+import com.example.notihub.database.fromEntity
 import com.example.notihub.databinding.ActivityMainBinding
 import com.example.notihub.parsers.InfoPollingService
 import com.example.notihub.parsers.KNUAnnouncement
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -32,6 +38,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var infoPollingServiceConnection: ServiceConnection
     private val announcementItems = mutableListOf<KNUAnnouncement>()
+    private val announcementDao by lazy { AppDatabase.getDatabase(applicationContext).knuAnnouncementDao() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -169,6 +176,14 @@ class MainActivity : AppCompatActivity() {
                 getParcelableArray(ANNUONCEMENTS)
             }?.let {
                 announcementItems.addAll(it.filterIsInstance<KNUAnnouncement>())
+                adapter.notifyDataSetChanged()
+            }
+        } ?: lifecycleScope.launch(Dispatchers.Default) {
+            val announcements = announcementDao.getAllAnnouncements().map {
+                KNUAnnouncement.fromEntity(it)
+            }
+            withContext(Dispatchers.Main) {
+                announcementItems.addAll(announcements)
                 adapter.notifyDataSetChanged()
             }
         }

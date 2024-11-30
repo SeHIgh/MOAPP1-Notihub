@@ -29,6 +29,28 @@ data class UserPreferenceEntity(
     var weight: Double = 0.0  // 초기 가중치 (기본값 0.0)
 )
 
+fun KNUAnnouncement.toEntity() = KNUAnnouncementEntity(
+    source = this.source,
+    id = this.id,
+    title = this.title,
+    time = this.time,
+    bodyUrl = this.bodyUrl,
+    body = this.body,
+    summary = this.summary,
+    keywords = this.keywords
+)
+
+fun KNUAnnouncement.CREATOR.fromEntity(announcement: KNUAnnouncementEntity) = KNUAnnouncement(
+    source = announcement.source,
+    id = announcement.id,
+    title = announcement.title,
+    time = announcement.time,
+    bodyUrl = announcement.bodyUrl,
+    body = announcement.body,
+    summary = announcement.summary,
+    keywords = announcement.keywords.toMutableList()
+)
+
 // UserPreferenceEntity 변경 사항:
 // - PrimaryKey : 단일 keyword로 변경 -> 중복된 keyword에 대한 가중치 저장을 방지
 // - indices 추가 -> keyword의 고유성을 보장 & 데이터베이스 접근 시 내부적으로 효율적인 처리가 이루어짐
