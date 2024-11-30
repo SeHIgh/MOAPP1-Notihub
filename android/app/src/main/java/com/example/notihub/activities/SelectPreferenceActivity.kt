@@ -12,6 +12,7 @@ import com.example.notihub.INITIAL_WEIGHT
 import com.example.notihub.R
 import com.example.notihub.adapters.KeywordAdapter
 import com.example.notihub.database.AppDatabase
+import com.example.notihub.database.UserPreferenceEntity
 import com.example.notihub.databinding.ActivitySelectPreferenceBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -39,9 +40,10 @@ class SelectPreferenceActivity : AppCompatActivity() {
         // "시작하기" 버튼 클릭 시 ListActivity로 선택된 키워드들 전달
         val buttonFinish: Button = binding.finishButton
         buttonFinish.setOnClickListener {
-            adapter.getSelectedKeywords().forEach {
-                lifecycleScope.launch(Dispatchers.Default) {
-                    userPreferenceDao.updateWeightByKeyword(it, INITIAL_WEIGHT)
+            val selected = adapter.getSelectedKeywords()
+            lifecycleScope.launch(Dispatchers.Default) {
+                selected.forEach {
+                    userPreferenceDao.insertOrUpdatePreference(UserPreferenceEntity(it, INITIAL_WEIGHT))
                 }
             }
             startActivity(

@@ -6,7 +6,7 @@ import com.example.notihub.parsers.KNUAnnouncementSource
 @Dao
 interface KNUAnnouncementDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAnnouncement(announcement: KNUAnnouncementEntity)
+    suspend fun insertOrUpdateAnnouncement(announcement: KNUAnnouncementEntity)
 
     // id로 공지사항 조회
     @Query("SELECT * FROM knu_announcement WHERE id = :id AND source = :source")

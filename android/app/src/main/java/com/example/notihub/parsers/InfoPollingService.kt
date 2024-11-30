@@ -157,7 +157,7 @@ class InfoPollingService : LifecycleService() {
         val topKeywords = userPreferenceDao.getTopKeywords(TOP_KEYWORDS)
         newItems.forEach {
             Log.d("DB", "새로운 알림이 저장됨: ${it.title}")
-            announcementDao.insertAnnouncement(it.toEntity())
+            announcementDao.insertOrUpdateAnnouncement(it.toEntity())
             if (shouldNotify(it.keywords, topKeywords))
                 showNewAnnouncementNotification(it)
         }

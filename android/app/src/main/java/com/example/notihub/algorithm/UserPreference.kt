@@ -1,6 +1,7 @@
 package com.example.notihub.algorithm
 
 import com.example.notihub.MAX_WEIGHT_LINIT
+import com.example.notihub.WEIGHT_DECREMENT
 import com.example.notihub.WEIGHT_INCREMENT
 import com.example.notihub.database.UserPreferenceEntity
 
@@ -14,31 +15,30 @@ fun updateKeywordWeights(
     keywords: List<String>,
     userKeywordWeights: MutableList<UserPreferenceEntity>,
     preferred: Boolean
-) {
+): MutableList<UserPreferenceEntity> {
+    val updatedItems = mutableListOf<UserPreferenceEntity>()
     if (preferred) {
         keywords.forEach { keyword ->
             val keywordWeight = userKeywordWeights.find { it.keyword == keyword }
             if (keywordWeight != null) {
                 keywordWeight.weight += WEIGHT_INCREMENT
+                updatedItems.add(keywordWeight)
             } else {
-                userKeywordWeights.add(UserPreferenceEntity(keyword, WEIGHT_INCREMENT))
+                UserPreferenceEntity(keyword, WEIGHT_INCREMENT).let {
+                    userKeywordWeights.add(it)
+                    updatedItems.add(it)
+                }
             }
-        }
-        val maxWeight = userKeywordWeights.maxOfOrNull { it.weight } ?: 0.0
-        if (maxWeight > MAX_WEIGHT_LINIT) {
-            val scale = MAX_WEIGHT_LINIT / maxWeight
-            userKeywordWeights.forEach { it.weight *= scale }
         }
     } else {
         keywords.forEach { keyword ->
             val keywordWeight = userKeywordWeights.find { it.keyword == keyword }
             if (keywordWeight != null) {
                 // 가중치 감소
-                keywordWeight.weight -= WEIGHT_INCREMENT
-                if (keywordWeight.weight <= 0) {
-                    userKeywordWeights.remove(keywordWeight)
-                }
+                keywordWeight.weight -= WEIGHT_DECREMENT
+                updatedItems.add(keywordWeight)
             }
         }
     }
+    return updatedItems
 }

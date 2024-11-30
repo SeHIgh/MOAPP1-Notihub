@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.example.notihub.parsers.KNUAnnouncement
 import com.example.notihub.parsers.KNUAnnouncementSource
+import com.example.notihub.parsers.Preference
 
 @Entity(tableName = "knu_announcement", primaryKeys = ["source", "id"])
 @TypeConverters(Converters::class) // Custom TypeConverter 사용
@@ -17,7 +18,8 @@ data class KNUAnnouncementEntity(
     val bodyUrl: String,
     val body: String = "",
     val summary: String = "",
-    val keywords: List<String> = emptyList()
+    val keywords: List<String> = emptyList(),
+    val preference: Preference
 )
 
 @Entity(
@@ -37,7 +39,8 @@ fun KNUAnnouncement.toEntity() = KNUAnnouncementEntity(
     bodyUrl = this.bodyUrl,
     body = this.body,
     summary = this.summary,
-    keywords = this.keywords
+    keywords = this.keywords,
+    preference = this.preference
 )
 
 fun KNUAnnouncement.CREATOR.fromEntity(announcement: KNUAnnouncementEntity) = KNUAnnouncement(
@@ -48,7 +51,8 @@ fun KNUAnnouncement.CREATOR.fromEntity(announcement: KNUAnnouncementEntity) = KN
     bodyUrl = announcement.bodyUrl,
     body = announcement.body,
     summary = announcement.summary,
-    keywords = announcement.keywords.toMutableList()
+    keywords = announcement.keywords.toMutableList(),
+    preference = announcement.preference
 )
 
 // UserPreferenceEntity 변경 사항:

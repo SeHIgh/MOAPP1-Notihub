@@ -29,7 +29,7 @@ suspend fun getKNUCSEAnnouncementList(): MutableList<KNUAnnouncement> =
             announcement = KNUAnnouncement(
                 KNUAnnouncementSource.CSE, idTag.text().toInt(), linkTag.text(),
                 KNUAnnouncement.Time(dateParts[0].toInt(), dateParts[1].toInt(), dateParts[2].toInt(), 0, 0),
-                announcementURL, "", "", mutableListOf()
+                announcementURL
             )
             announcements.add(announcement)
         }

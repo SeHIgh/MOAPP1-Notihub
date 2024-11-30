@@ -3,6 +3,7 @@ package com.example.notihub.database
 import androidx.room.TypeConverter
 import com.example.notihub.parsers.KNUAnnouncement
 import com.example.notihub.parsers.KNUAnnouncementSource
+import com.example.notihub.parsers.Preference
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -21,6 +22,12 @@ class Converters {
         val type = object : TypeToken<List<String>>() {}.type
         return Gson().fromJson(json, type)
     }
+
+    @TypeConverter
+    fun fromPreference(source: Preference): String = source.name
+
+    @TypeConverter
+    fun toPreference(name: String): Preference = Preference.valueOf(name)
 
     // Time 객체를 String으로 변환
     @TypeConverter

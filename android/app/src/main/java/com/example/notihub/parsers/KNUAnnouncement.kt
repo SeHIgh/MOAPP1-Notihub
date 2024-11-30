@@ -8,15 +8,20 @@ enum class KNUAnnouncementSource {
     CSE, IT
 }
 
+enum class Preference {
+    LIKE, HATE, NEUTRAL
+}
+
 data class KNUAnnouncement(
     val source: KNUAnnouncementSource,
     val id: Int,
     val title: String,
     val time: Time,
     val bodyUrl: String,
-    var body: String,
-    var summary: String,
-    val keywords: MutableList<String>,
+    var body: String = "",
+    var summary: String = "",
+    val keywords: MutableList<String> = mutableListOf(),
+    var preference: Preference = Preference.NEUTRAL
 ): Comparable<KNUAnnouncement>, Parcelable {
     data class Time (
         var year: Int,
@@ -91,7 +96,9 @@ data class KNUAnnouncement(
                 source.readString() ?: "",
                 source.readString() ?: "",
                 source.readString() ?: "",
-                run { val list = mutableListOf<String>(); source.readStringList(list); list }
+                run { val list = mutableListOf<String>(); source.readStringList(list); list },
+                Preference.valueOf(source.readString()!!)
+
             )
         }
 
@@ -111,5 +118,6 @@ data class KNUAnnouncement(
         dest.writeString(body)
         dest.writeString(summary)
         dest.writeStringList(keywords)
+        dest.writeString(preference.toString())
     }
 }
