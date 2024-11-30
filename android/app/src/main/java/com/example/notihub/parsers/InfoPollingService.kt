@@ -200,7 +200,6 @@ class InfoPollingService : LifecycleService() {
         withContext(Dispatchers.IO) {
             val gson = Gson()
             for (announcement in channel) {
-                // announcement.summary = announcement.body
                 val elapsedTime = measureTime {
                     Log.d(
                         "Notihub::Gemini",
@@ -314,24 +313,12 @@ class InfoPollingService : LifecycleService() {
             source = announcement.source,
             id = announcement.id,
             title = announcement.title,
-            time = announcement.time.toString(),
+            time = announcement.time,
             bodyUrl = announcement.bodyUrl,
             body = announcement.body,
             summary = announcement.summary,
             keywords = announcement.keywords
         )
-    }
-
-    // DB: String -> timestamp  변환 함수
-    fun convertToTimestamp(timeString: String): Long {
-        // 원하는 날짜 형식에 맞게 SimpleDateFormat 설정
-        val format = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-
-        // timeString을 Date 객체로 변환
-        val date: Date = format.parse(timeString)
-
-        // Date 객체에서 타임스탬프(밀리초) 추출
-        return date.time
     }
 
     // DB: 데이터베이스에 새로운 공지사항 저장

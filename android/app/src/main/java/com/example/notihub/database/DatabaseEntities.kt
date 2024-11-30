@@ -4,15 +4,16 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
+import com.example.notihub.parsers.KNUAnnouncement
 import com.example.notihub.parsers.KNUAnnouncementSource
 
-@Entity(tableName = "knu_announcement")
+@Entity(tableName = "knu_announcement", primaryKeys = ["source", "id"])
 @TypeConverters(Converters::class) // Custom TypeConverter 사용
 data class KNUAnnouncementEntity(
     val source: KNUAnnouncementSource, // enum
-    @PrimaryKey val id: Int,
+    val id: Int,
     val title: String,
-    val time: String = "2024-01-01 00:00",  // 변환 필요 : Time 객체 -> String
+    val time: KNUAnnouncement.Time,
     val bodyUrl: String,
     val body: String = "",
     val summary: String = "",
@@ -23,10 +24,9 @@ data class KNUAnnouncementEntity(
     tableName = "user_preference",
     indices = [Index(value = ["keyword"], unique = true)]
 )
-@TypeConverters(Converters::class) // Custom TypeConverter 사용
 data class UserPreferenceEntity(
     @PrimaryKey val keyword: String,  // 가중치 부여할 단어
-    var weight: Double = 0.0,  // 초기 가중치 (기본값 0.0)
+    var weight: Double = 0.0  // 초기 가중치 (기본값 0.0)
 )
 
 // UserPreferenceEntity 변경 사항:
