@@ -1,14 +1,23 @@
 package com.example.notihub.parsers
 
-import Notification
-import UserPreference
+import android.app.AlarmManager
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Intent
 import android.os.Binder
+import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.example.notihub.BuildConfig
+import com.example.notihub.R
+import com.example.notihub.database.AppDatabase
+import com.example.notihub.database.Converters
 import com.example.notihub.database.KNUAnnouncementEntity
 import com.example.notihub.database.UserPreferenceDao
 import com.example.notihub.database.UserPreferenceEntity
@@ -57,6 +66,13 @@ class InfoPollingService : LifecycleService() {
             "아래 글을 처리해서 아래의 json 형식으로 알려 줘." +
                     "{\"summary\": \"5문장으로 요약된 글\", \"keywords\": [\"가장중요한단어1\", ..., \"가장중요한단어5\"]}\n\n"
         private val FIVE_SECONDS = 5.seconds
+        const val START_SERVICE = 11
+        const val SERVICE_ID = 11
+        const val REFRESH_NOTIFICATION_ID = 11
+        const val REFRESH_NOTIFICATION_CHANNEL = "polling"
+        const val NEW_ITEM_NOTIFICATION_CHANNEL = "new-item"
+
+        var newItemNotificationId = 100;
     }
 
     private val binders = mutableListOf<InfoBinder>()
@@ -66,8 +82,13 @@ class InfoPollingService : LifecycleService() {
     )
     private var job: Job? = null
 
+    // DB: lazy 를 통해 필요한 시점에만 데이터베이스와 연결되도록 함
+    private val announcementDao by lazy { AppDatabase.getDatabase(applicationContext).knuAnnouncementDao() }
+    private val userPreferenceDao by lazy { AppDatabase.getDatabase(applicationContext).userPreferenceDao() }
+
     override fun onCreate() {
         super.onCreate()
+        startForeground(SERVICE_ID, showPollingNotification())
         job = launchJob()
     }
 
@@ -86,7 +107,7 @@ class InfoPollingService : LifecycleService() {
     }
 
     private fun launchJob() = lifecycleScope.launch(Dispatchers.Default) {
-        val geminiChannel = Channel<KNUAnnouncement>()
+        val geminiChannel = Channel<KNUAnnouncement>(Channel.Factory.UNLIMITED)
         val newItems = mutableListOf<KNUAnnouncement>()
         val jobs = mutableListOf<Deferred<List<KNUAnnouncement>>>()
         val geminiJob: Job = launch { geminiLoop(geminiChannel) }
@@ -94,8 +115,13 @@ class InfoPollingService : LifecycleService() {
         jobs.add(async {
             val announcements = getKNUCSEAnnouncementList()
             // TODO: 새 글인지 확인
-            // for (announcement in announcements) {
-            for ((i, announcement) in announcements.withIndex()) {
+            // DB: 기존의 공지 데이터베이스를 탐색하여 존재 한다면 리스트에서 제외 (중복 방지)
+            val newAnnouncements = announcements.filter { announcement ->
+                val existingEntity = announcementDao.getAnnouncementById(announcement.id)
+                existingEntity == null // Room DB -> 조회 결과 없는 경우 null 반환
+            }
+
+            for ((i, announcement) in newAnnouncements.withIndex()) {
                 launch {
                     getKNUCSEAnnouncementDetail(announcement)
                     // if (announcement.body.isNotEmpty())
@@ -108,7 +134,13 @@ class InfoPollingService : LifecycleService() {
         jobs.add(async {
             val announcements = getKNUITAnnouncementList()
             // TODO: 새 글인지 확인
-            for (announcement in announcements) {
+            // DB: 기존의 공지 데이터베이스를 탐색하여 존재 한다면 리스트에서 제외 (중복 방지)
+            val newAnnouncements = announcements.filter { announcement ->
+                val existingEntity = announcementDao.getAnnouncementById(announcement.id)
+                existingEntity == null
+            }
+            // TODO: 위와 다른 이유?
+            for (announcement in newAnnouncements) {
                 launch {
                     getKNUITAnnouncementDetail(announcement)
                     // if (announcement.body.isNotEmpty())
@@ -125,14 +157,14 @@ class InfoPollingService : LifecycleService() {
         geminiJob.join()
         newItems.sort()
 
-        // TODO: 유사도
-        // DB: 알림 데이터 처리 후 유저 피드백 처리
-        for (announcement in newItems) {
-            // KNUAnnouncement을 KNUAnnouncementEntity로 변환
-            val announcementEntity = convertToKNUAnnouncementEntity(announcement)
-            // TODO: 실제 피드백을 받을 방법을 결정 필요
-            processNotificationFeedback(userPreferenceDao, announcement, "like")
-        }
+        // DB: 데이터베이스에 새로운 알림 저장
+        // TODO: 위치 수정
+        saveAnnouncementsToDB(newItems)
+
+        // TODO: 가중치 계산 반영
+        // DB: 알림 처리 및 피드백 수집
+        // TODO: 위치 수정
+        handleNotifications(newItems)
 
         // TODO: 새 글 알림
         for (binder in binders) {
@@ -141,6 +173,32 @@ class InfoPollingService : LifecycleService() {
 
         // TODO: AlarmManager
 
+        // 추가된 부분
+        newItems.forEach { showNewAnnouncementNotification(it) }
+        for (binder in binders) {
+            binder.onNewItems(newItems)
+        }
+
+        val nextStartTime: Long = SystemClock.elapsedRealtime() + 1800_000
+        (getSystemService(ALARM_SERVICE) as AlarmManager).setWindow(
+            AlarmManager.ELAPSED_REALTIME_WAKEUP,
+            nextStartTime, nextStartTime + 600_000,
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
+                PendingIntent.getForegroundService(
+                    applicationContext, START_SERVICE,
+                    Intent(applicationContext, this@InfoPollingService::class.java),
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+            } else {
+                PendingIntent.getService(
+                    applicationContext, START_SERVICE,
+                    Intent(applicationContext, this@InfoPollingService::class.java),
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+            }
+        )
+
+        stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
@@ -173,40 +231,86 @@ class InfoPollingService : LifecycleService() {
             }
         }
 
+    // 추가된 부분
+    private fun showPollingNotification(): Notification {
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val builder: NotificationCompat.Builder =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    REFRESH_NOTIFICATION_CHANNEL,
+                    getString(R.string.polling_channel),
+                    NotificationManager.IMPORTANCE_MIN
+                )
+                channel.setShowBadge(false)
+                manager.createNotificationChannel(channel)
+                NotificationCompat.Builder(this, REFRESH_NOTIFICATION_CHANNEL)
+            } else {
+                NotificationCompat.Builder(this)
+            }
+
+        builder.setSmallIcon(applicationInfo.icon)
+        builder.setWhen(System.currentTimeMillis())
+        builder.setPriority(NotificationCompat.PRIORITY_LOW)
+        builder.setContentTitle(getString(R.string.polling_notification_title))
+        builder.setContentText(getString(R.string.polling_notification_description))
+
+        val intent = Intent(applicationContext, this::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this, 10, intent, PendingIntent.FLAG_IMMUTABLE
+        )
+        builder.setContentIntent(pendingIntent)
+
+        val notification = builder.build()
+        manager.notify(REFRESH_NOTIFICATION_ID, notification)
+        return notification
+    }
+
+    private fun showNewAnnouncementNotification(newItem: KNUAnnouncement) {
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val builder: NotificationCompat.Builder =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    NEW_ITEM_NOTIFICATION_CHANNEL,
+                    getString(R.string.polling_channel),
+                    NotificationManager.IMPORTANCE_HIGH
+                )
+                channel.setShowBadge(false)
+                manager.createNotificationChannel(channel)
+                NotificationCompat.Builder(this, NEW_ITEM_NOTIFICATION_CHANNEL)
+            } else {
+                NotificationCompat.Builder(this)
+            }
+
+        builder.setSmallIcon(applicationInfo.icon)
+        builder.setWhen(System.currentTimeMillis())
+        builder.setContentTitle(newItem.title)
+        builder.setContentText(newItem.summary)
+
+        val pendingIntent = PendingIntent.getActivity(
+            this, newItemNotificationId,
+            Intent(applicationContext, DetailActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(DetailActivity.DATA, newItem),
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        builder.setContentIntent(pendingIntent)
+
+        manager.notify(newItemNotificationId++, builder.build())
+    }
+
     // DB: KNUAnnouncement을 KNUAnnouncementEntity로 변환하는 함수
     // suspand 필요 유무?
     private fun convertToKNUAnnouncementEntity(announcement: KNUAnnouncement): KNUAnnouncementEntity {
         return KNUAnnouncementEntity(
-            source = announcement.source,           // source는 KNUAnnouncement에서 가져온 그대로
+            source = announcement.source,
             id = announcement.id,
             title = announcement.title,
-            time = announcement.time.toString(),    // Time 객체를 String으로 변환
+            time = announcement.time.toString(),
             bodyUrl = announcement.bodyUrl,
             body = announcement.body,
             summary = announcement.summary,
             keywords = announcement.keywords
         )
-    }
-
-    // DB: KNUAnnouncementEntity를 UserPreferenceEntity로 변환하는 함수
-    // suspand 필요 유무? - getPreferenceById 사용 위해선 suspend 필요
-    private suspend fun convertToUserPreferenceEntity(
-        userPreferenceDao: UserPreferenceDao,
-        announcementEntity: KNUAnnouncementEntity
-    ): UserPreferenceEntity {
-        // 기존에 동일한 ID를 가진 preference가 있는지 확인
-        val existingPreference = userPreferenceDao.getPreferenceById(announcementEntity.id)
-        val preference = existingPreference ?: UserPreferenceEntity(
-            id = announcementEntity.id,
-            source = announcementEntity.source,
-            title = announcementEntity.title,
-            time = announcementEntity.time,
-            body = announcementEntity.body,
-            bodyUrl = announcementEntity.bodyUrl,
-            summary = announcementEntity.summary,
-            keywords = announcementEntity.keywords
-        )
-        return preference
     }
 
     // DB: String -> timestamp  변환 함수
@@ -221,60 +325,54 @@ class InfoPollingService : LifecycleService() {
         return date.time
     }
 
+    // DB: 데이터베이스에 새로운 공지사항 저장
+    private suspend fun saveAnnouncementsToDB(newItems: List<KNUAnnouncement>) {
+        for (announcement in newItems) {
+            val announcementEntity = convertToKNUAnnouncementEntity(announcement)
+            announcementDao.insertAnnouncement(announcementEntity)
+            Log.d("DB", "새로운 알림이 저장됨: ${announcementEntity.title}")
+        }
+    }
+
+    // DB: 알림 처리 및 사용자 피드백 수집
+    private suspend fun handleNotifications(newItems: List<KNUAnnouncement>) {
+        for (announcement in newItems) {
+            // 알림 전송 - 새로운 글의 경우 바로 전송
+            showNewAnnouncementNotification(announcement)
+
+            // 사용자 선호도와 관련된 UserPreferenceEntity 생성
+            val userPreferences = userPreferenceDao.getAllPreferences()
+            for (keyword in announcement.keywords) {
+                val existingPreference = userPreferences.find { it.keyword == keyword }
+                // 기존에 없는 키워드라면 가중치 0 초기화
+                val userPreferenceEntity = existingPreference ?: UserPreferenceEntity(keyword = keyword, weight = 0.0)
+
+                // TODO: 사용자 피드백 받는 방식 논의
+                val userFeedback = "" // 실제 피드백 입력 방법에 따라 변경 (예: "like")
+                processNotificationFeedback(userPreferenceDao, userPreferenceEntity, userFeedback)
+            }
+        }
+    }
+
     // DB: 가중치 계산 및 피드백 처리 함수
     private suspend fun processNotificationFeedback(
         userPreferenceDao: UserPreferenceDao,
         userPreferenceEntity: UserPreferenceEntity,
         feedback: String
     ) {
-        // 1. userPreference를 이용해 가중치 계산
+        // 1. 사용자 선호도 데이터베이스에서 기존 키워드를 조회
+        val existingPreference = userPreferenceDao.getPreferenceByKeyword(userPreferenceEntity.keyword)
 
-        // 가중치 계산에 사용할 Notification 생성 (userPreferenceEntity 파싱)
-        val notifications = userPreferenceDao.getAllPreferences().map { _ ->
-            Notification(
-                message = userPreferenceEntity.body,
-                keywords = userPreferenceEntity.keywords,
-                timestamp = convertToTimestamp(userPreferenceEntity.time), // 전달값 timestamp 형태로 변환
-            )
-        }
+        // 2. 알고리즘을 통해 가중치 계산 및 피드백 처리 (calculateWeight 는 추후 알고리즘 함수로 대체)
+        // 알고리즘 리턴값은 최종 계산한 가중치로
+        val finalWeight = calculateWeight(userPreferenceEntity.keyword, existingPreference?.weight ?: 0.0, feedback)
 
-        val userPreference = UserPreference()
-
-        // 각 알림에 대해 키워드 가중치 업데이트
-        for (notification in notifications) {
-            userPreference.updateKeywordWeights(notification)
-        }
-
-        // 피드백 처리
-        notifications.forEach { notification ->
-            userPreference.onNotificationFeedback(notification, feedback)
-        }
-
-        // 2. 업데이트된 데이터를 UserPreferenceEntity에 갱신
+        // 3. 업데이트된 데이터를 UserPreferenceEntity에 갱신
         val updatedPreference = userPreferenceEntity.copy(
-            weight = notifications.sumByDouble { notification ->
-                userPreference.recommendNotifications(listOf(notification))
-                    .firstOrNull()?.keywords?.sum() ?: 0.0
-            },  // 여러 알림의 가중치 합계
-            feedback = userPreference.feedbackCount + notifications.size // 피드백 횟수 증가
+            weight = finalWeight // 알고리즘에서 계산된 새로운 가중치 값 설정
         )
 
+        // 4. 업데이트된 선호도 데이터베이스에 저장
         userPreferenceDao.insertOrUpdatePreference(updatedPreference)
     }
-
-    // private suspend fun getNewAnnouncements(
-    //     getList: () -> List<KNUAnnouncement>,
-    //     getDetail: (KNUAnnouncement) -> Unit,
-    //     previousAnnouncements: List<KNUAnnouncement>
-    // ) = coroutineScope {
-    //     val announcements = getList()
-    //     for (announcement in announcements) {
-    //         launch {
-    //             getDetail(announcement)
-    //             for (binder in binders) {
-    //                 binder.onResult(announcement)
-    //             }
-    //         }
-    //     }
-    // }
 }

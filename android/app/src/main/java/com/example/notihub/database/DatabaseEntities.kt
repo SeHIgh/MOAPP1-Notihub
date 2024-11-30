@@ -4,7 +4,6 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
-import com.example.notihub.parsers.KNUAnnouncement
 import com.example.notihub.parsers.KNUAnnouncementSource
 
 @Entity(tableName = "knu_announcement")
@@ -24,6 +23,7 @@ data class KNUAnnouncementEntity(
     tableName = "user_preference",
     indices = [Index(value = ["keyword"], unique = true)]
 )
+@TypeConverters(Converters::class) // Custom TypeConverter 사용
 data class UserPreferenceEntity(
     @PrimaryKey val keyword: String,  // 가중치 부여할 단어
     var weight: Double = 0.0,  // 초기 가중치 (기본값 0.0)

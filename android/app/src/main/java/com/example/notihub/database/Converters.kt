@@ -8,6 +8,12 @@ import com.google.gson.reflect.TypeToken
 
 class Converters {
     @TypeConverter
+    fun fromKNUAnnouncementSource(source: KNUAnnouncementSource): String = source.name
+
+    @TypeConverter
+    fun toKNUAnnouncementSource(name: String): KNUAnnouncementSource = KNUAnnouncementSource.valueOf(name)
+
+    @TypeConverter
     fun fromKeywords(keywords: MutableList<String>): String = Gson().toJson(keywords)
 
     @TypeConverter
