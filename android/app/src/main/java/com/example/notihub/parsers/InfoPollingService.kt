@@ -119,7 +119,7 @@ class InfoPollingService : LifecycleService() {
             // TODO: 새 글인지 확인
             // DB: 기존의 공지 데이터베이스를 탐색하여 존재 한다면 리스트에서 제외 (중복 방지)
             val newAnnouncements = announcements.filter { announcement ->
-                val existingEntity = announcementDao.getAnnouncementById(announcement.id)
+                val existingEntity = announcementDao.getAnnouncementById(announcement.id, announcement.source)
                 existingEntity == null // Room DB -> 조회 결과 없는 경우 null 반환
             }
 
@@ -138,7 +138,7 @@ class InfoPollingService : LifecycleService() {
             // TODO: 새 글인지 확인
             // DB: 기존의 공지 데이터베이스를 탐색하여 존재 한다면 리스트에서 제외 (중복 방지)
             val newAnnouncements = announcements.filter { announcement ->
-                val existingEntity = announcementDao.getAnnouncementById(announcement.id)
+                val existingEntity = announcementDao.getAnnouncementById(announcement.id, announcement.source)
                 existingEntity == null
             }
             // TODO: 위와 다른 이유?
@@ -333,8 +333,6 @@ class InfoPollingService : LifecycleService() {
     // DB: 알림 처리 및 사용자 피드백 수집
     private suspend fun handleNotifications(newItems: List<KNUAnnouncement>) {
         for (announcement in newItems) {
-            // 알림 전송 - 새로운 글의 경우 바로 전송
-            showNewAnnouncementNotification(announcement)
 
             // 사용자 선호도와 관련된 UserPreferenceEntity 생성
             val userPreferences = userPreferenceDao.getAllPreferences()
