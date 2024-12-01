@@ -90,7 +90,7 @@ class ContentActivity : AppCompatActivity() {
                 announcementDao.insertOrUpdateAnnouncement(announcement.toEntity())
             }
         }
-        binding.moreSeeButton.setOnClickListener {
+        binding.buttonToggleDetail.setOnClickListener {
             when (binding.textViewDetail.visibility) {
                 View.GONE -> {
                     binding.textViewDetail.visibility = View.VISIBLE

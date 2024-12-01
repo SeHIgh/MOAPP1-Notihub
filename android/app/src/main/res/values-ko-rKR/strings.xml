@@ -7,4 +7,6 @@
     <string name="polling_notification_title">새 글 가져오는 중...</string>
     <string name="polling_notification_description">새 글을 가져오는 중입니다</string>
     <string name="announcement_channel">새 글 알림</string>
+    <string name="show_original">원본 글 보이기</string>
+    <string name="hide_original">원본 글 숨기기</string>
 </resources>
