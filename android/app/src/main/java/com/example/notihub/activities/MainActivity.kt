@@ -166,7 +166,7 @@ class MainActivity : AppCompatActivity() {
                 infoPollingServiceConnection,
                 Context.BIND_AUTO_CREATE
             )
-            Toast.makeText(this, "Refreshing...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.refresh_started, Toast.LENGTH_SHORT).show()
         }
 
         savedInstanceState?.run {

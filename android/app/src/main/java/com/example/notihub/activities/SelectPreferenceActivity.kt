@@ -30,11 +30,7 @@ class SelectPreferenceActivity : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
 
         recyclerView.layoutManager = GridLayoutManager(this, 2)
-        val adapter = KeywordAdapter(this, keywords) { selectedKeywords ->
-            // 선택된 키워드 변경 시 호출되는 콜백
-            // 선택된 키워드가 변경될 때마다 콜백 호출됨
-            Toast.makeText(this, "선택된 키워드: $selectedKeywords", Toast.LENGTH_SHORT).show()
-        }
+        val adapter = KeywordAdapter(this, keywords) { }
         recyclerView.adapter = adapter
 
         // "시작하기" 버튼 클릭 시 ListActivity로 선택된 키워드들 전달

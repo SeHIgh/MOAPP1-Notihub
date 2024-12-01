@@ -13,4 +13,5 @@
     <string name="Intro3_content" translatable="false">그럼 시작해 볼까요?</string>
     <string name="show_original">Show Original Text</string>
     <string name="hide_original">Hide Original Text</string>
+    <string name="refresh_started">Refresh New Announcements...</string>
 </resources>

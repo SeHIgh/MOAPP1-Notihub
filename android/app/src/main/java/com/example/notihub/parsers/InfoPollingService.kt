@@ -5,6 +5,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.Context.NOTIFICATION_SERVICE
 import android.content.Intent
 import android.os.Binder
 import android.os.Build
@@ -12,6 +13,7 @@ import android.os.IBinder
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.example.notihub.BuildConfig
@@ -24,8 +26,13 @@ import com.example.notihub.database.KNUAnnouncementEntity
 import com.example.notihub.database.UserPreferenceDao
 import com.example.notihub.database.UserPreferenceEntity
 import com.example.notihub.database.toEntity
+import com.example.notihub.parsers.InfoPollingService.Companion.NEW_ITEM_NOTIFICATION_CHANNEL
+import com.example.notihub.parsers.InfoPollingService.Companion.REFRESH_NOTIFICATION_CHANNEL
+import com.example.notihub.parsers.InfoPollingService.Companion.REFRESH_NOTIFICATION_ID
+import com.example.notihub.parsers.InfoPollingService.Companion.newItemNotificationId
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -122,11 +129,12 @@ class InfoPollingService : LifecycleService() {
             val newAnnouncements = announcements.filter {
                 announcement -> announcementDao.getAnnouncementById(announcement.id, announcement.source) == null
             }
-            for ((i, announcement) in newAnnouncements.withIndex()) {
+            // for ((i, announcement) in newAnnouncements.withIndex()) {  // 테스트용
+            for (announcement in newAnnouncements) {
                 launch {
                     getKNUCSEAnnouncementDetail(announcement)
-                    if (announcement.body.isNotEmpty() && (i == 0 || i == 1))
-                    // if (announcement.body.isNotEmpty())
+                    // if (announcement.body.isNotEmpty() && (i == 0 || i == 1))  // 테스트용
+                    if (announcement.body.isNotEmpty())
                         geminiChannel.send(announcement)
                 }
             }
@@ -140,8 +148,8 @@ class InfoPollingService : LifecycleService() {
             for (announcement in newAnnouncements) {
                 launch {
                     getKNUITAnnouncementDetail(announcement)
-                    // if (announcement.body.isNotEmpty())
-                    //     geminiChannel.send(announcement)
+                    if (announcement.body.isNotEmpty())
+                        geminiChannel.send(announcement)
                 }
             }
             newAnnouncements
@@ -205,10 +213,14 @@ class InfoPollingService : LifecycleService() {
                         response = response.drop(4)
                     Log.d("Notihub::Gemini", response)
 
-                    val data = gson.fromJson(response, GeminiResponse::class.java)
-                    announcement.run {
-                        summary = data.summary
-                        keywords.addAll(data.keywords)
+                    try {
+                        gson.fromJson(response, GeminiResponse::class.java)
+                    } catch (e: JsonSyntaxException) {
+                        Log.e("NotiHub::InfoPollingService", "Failed to parse Gemini's response", e)
+                        null
+                    }?.run {
+                        announcement.summary = summary
+                        announcement.keywords.addAll(keywords)
                     }
                 }
                 if (elapsedTime < FIVE_SECONDS)
