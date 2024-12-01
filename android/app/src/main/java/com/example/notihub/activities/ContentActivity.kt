@@ -1,6 +1,7 @@
 package com.example.notihub.activities
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -91,8 +92,14 @@ class ContentActivity : AppCompatActivity() {
         }
         binding.moreSeeButton.setOnClickListener {
             when (binding.textViewDetail.visibility) {
-                View.GONE -> binding.textViewDetail.visibility = View.VISIBLE
-                View.VISIBLE -> binding.textViewDetail.visibility = View.GONE
+                View.GONE -> {
+                    binding.textViewDetail.visibility = View.VISIBLE
+                    binding.buttonToggleDetail.text = getString(R.string.hide_original)
+                }
+                View.VISIBLE -> {
+                    binding.textViewDetail.visibility = View.GONE
+                    binding.buttonToggleDetail.text = getString(R.string.show_original)
+                }
             }
         }
         // binding.toolbar.setNavigationOnClickListener {
@@ -151,7 +158,8 @@ class ContentActivity : AppCompatActivity() {
                     ContextCompat.getColor(this, R.color.white),
                     android.graphics.PorterDuff.Mode.SRC_IN
                 )
-                binding.likeButton.setBackgroundColor(Color.rgb(3, 152, 253))
+                binding.likeButton.backgroundTintList =
+                    ColorStateList.valueOf(Color.rgb(3, 152, 253))
                 binding.hateButton.isEnabled = false
             }
             Preference.HATE -> {
@@ -159,7 +167,8 @@ class ContentActivity : AppCompatActivity() {
                     ContextCompat.getColor(this, R.color.white),
                     android.graphics.PorterDuff.Mode.SRC_IN
                 )
-                binding.hateButton.setBackgroundColor(Color.rgb(3, 152, 253))
+                binding.hateButton.backgroundTintList =
+                    ColorStateList.valueOf(Color.rgb(3, 152, 253))
                 binding.likeButton.isEnabled = false
             }
             Preference.NEUTRAL -> {
