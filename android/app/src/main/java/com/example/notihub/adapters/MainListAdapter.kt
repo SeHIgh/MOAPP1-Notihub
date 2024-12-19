@@ -25,21 +25,21 @@ class MainListAdapter(private val items: MutableList<KNUAnnouncement>):
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val binding = (holder as MainViewHolder).binding
-        val boardText = when(items[position].source) {
+        val announcement = items[position]
+
+        binding.textViewTitle.text = announcement.title
+        binding.textViewTime.text = announcement.time.toString()
+        binding.textViewSummary.text = announcement.summary.ifEmpty {
+            announcement.body
+        }
+        binding.textViewSource.text = when(announcement.source) {
             KNUAnnouncementSource.CSE -> context.getText(R.string.cse_name)
             KNUAnnouncementSource.IT -> context.getText(R.string.it_name)
         }
 
-        binding.textViewTitle.text = items[position].title
-        binding.textViewTime.text = items[position].time.toString()
-        binding.textViewSummary.text = items[position].summary.ifEmpty {
-            items[position].body
-        }
-        binding.textViewSource.text = boardText
-
         binding.root.setOnClickListener {
             context.startActivity(Intent(context, ContentActivity::class.java).putExtra(
-                ContentActivity.DATA, items[position]
+                ContentActivity.DATA, announcement
             ))
         }
     }

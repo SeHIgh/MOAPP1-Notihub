@@ -102,18 +102,9 @@ class ContentActivity : AppCompatActivity() {
                 }
             }
         }
-        // binding.toolbar.setNavigationOnClickListener {
-        //     startActivity(
-        //         Intent(applicationContext, MainActivity::class.java)
-        //             .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        //     )
-        // }
-        // onBackPressedDispatcher.addCallback {
-        //     startActivity(
-        //         Intent(applicationContext, MainActivity::class.java)
-        //             .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        //     )
-        // }
+        binding.toolbar.setNavigationOnClickListener {
+            finish()
+        }
     }
 
     override fun onStart() {

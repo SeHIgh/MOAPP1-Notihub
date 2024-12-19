@@ -31,7 +31,6 @@ data class KNUAnnouncement(
         var minute: Int
     ): Comparable<Time>, Parcelable {
         override fun toString(): String {
-            // return "$year-${"%02d".format(month)}-${"%02d".format(day)} ${"%02d".format(hour)}:${"%02d".format(minute)}"
             return "${"%02d".format(month)}-${"%02d".format(day)} ${"%02d".format(hour)}:${"%02d".format(minute)}"
         }
 

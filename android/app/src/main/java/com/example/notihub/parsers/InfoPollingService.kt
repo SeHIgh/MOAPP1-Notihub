@@ -11,7 +11,6 @@ import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.LifecycleService
@@ -114,7 +113,6 @@ class InfoPollingService : LifecycleService() {
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-        // TODO: 할당된 Binder remove (어떻게?)
         return super.onUnbind(intent)
     }
 
@@ -129,11 +127,9 @@ class InfoPollingService : LifecycleService() {
             val newAnnouncements = announcements.filter {
                 announcement -> announcementDao.getAnnouncementById(announcement.id, announcement.source) == null
             }
-            // for ((i, announcement) in newAnnouncements.withIndex()) {  // 테스트용
             for (announcement in newAnnouncements) {
                 launch {
                     getKNUCSEAnnouncementDetail(announcement)
-                    // if (announcement.body.isNotEmpty() && (i == 0 || i == 1))  // 테스트용
                     if (announcement.body.isNotEmpty())
                         geminiChannel.send(announcement)
                 }
@@ -164,7 +160,6 @@ class InfoPollingService : LifecycleService() {
 
         val topKeywords = userPreferenceDao.getTopKeywords(TOP_KEYWORDS)
         newItems.forEach {
-            Log.d("DB", "새로운 알림이 저장됨: ${it.title}")
             announcementDao.insertOrUpdateAnnouncement(it.toEntity())
             if (shouldNotify(it.keywords, topKeywords))
                 showNewAnnouncementNotification(it)
@@ -201,22 +196,16 @@ class InfoPollingService : LifecycleService() {
             val gson = Gson()
             for (announcement in channel) {
                 val elapsedTime = measureTime {
-                    Log.d(
-                        "Notihub::Gemini",
-                        "URL: ${announcement.bodyUrl} | Body: ${announcement.body}"
-                    )
                     var response = geminiModel.generateContent(
                         PROMPT_HEADER + announcement.body
                     ).text ?: ""
                     response = response.trim().trim('`')
                     if (response.startsWith("json"))
                         response = response.drop(4)
-                    Log.d("Notihub::Gemini", response)
 
                     try {
                         gson.fromJson(response, GeminiResponse::class.java)
                     } catch (e: JsonSyntaxException) {
-                        Log.e("NotiHub::InfoPollingService", "Failed to parse Gemini's response", e)
                         null
                     }?.run {
                         announcement.summary = summary
@@ -293,20 +282,4 @@ class InfoPollingService : LifecycleService() {
 
         manager.notify(newItemNotificationId++, builder.build())
     }
-
-    // private suspend fun getNewAnnouncements(
-    //     getList: () -> List<KNUAnnouncement>,
-    //     getDetail: (KNUAnnouncement) -> Unit,
-    //     previousAnnouncements: List<KNUAnnouncement>
-    // ) = coroutineScope {
-    //     val announcements = getList()
-    //     for (announcement in announcements) {
-    //         launch {
-    //             getDetail(announcement)
-    //             for (binder in binders) {
-    //                 binder.onResult(announcement)
-    //             }
-    //         }
-    //     }
-    // }
 }

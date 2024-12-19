@@ -54,10 +54,3 @@ fun KNUAnnouncement.CREATOR.fromEntity(announcement: KNUAnnouncementEntity) = KN
     keywords = announcement.keywords.toMutableList(),
     preference = announcement.preference
 )
-
-// UserPreferenceEntity 변경 사항:
-// - PrimaryKey : 단일 keyword로 변경 -> 중복된 keyword에 대한 가중치 저장을 방지
-// - indices 추가 -> keyword의 고유성을 보장 & 데이터베이스 접근 시 내부적으로 효율적인 처리가 이루어짐
-// - weight 필드 -> Double : 연한 가중치 값을 저장가능
-// - feedback 필드를 추가하여 사용자가 좋아요/싫어요를 선택한 내용을 Int로 저장가능
-// - feedback : 좋아요(1), 싫어요(-1), 무응답(0)

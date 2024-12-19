@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -28,6 +27,7 @@ import com.example.notihub.databinding.ActivityMainBinding
 import com.example.notihub.parsers.InfoPollingService
 import com.example.notihub.parsers.KNUAnnouncement
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.invoke
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var infoPollingServiceConnection: ServiceConnection
+    private lateinit var listAdapter: MainListAdapter
     private val announcementItems = mutableListOf<KNUAnnouncement>()
     private val announcementDao by lazy { AppDatabase.getDatabase(applicationContext).knuAnnouncementDao() }
 
@@ -46,6 +47,20 @@ class MainActivity : AppCompatActivity() {
         displayUi(savedInstanceState)
     }
 
+    override fun onRestart() {
+        super.onRestart()
+        lifecycleScope.launch(Dispatchers.Default) {
+            val announcements = announcementDao.getAllAnnouncements().map {
+                KNUAnnouncement.fromEntity(it)
+            }
+            withContext(Dispatchers.Main) {
+                announcementItems.clear()
+                announcementItems.addAll(announcements)
+                listAdapter.notifyDataSetChanged()
+            }
+        }
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putParcelableArray(ANNUONCEMENTS, announcementItems.toTypedArray())
@@ -53,17 +68,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkPermissionAndHandleFirstRun() {
         try {
-            enableEdgeToEdge() // 이 부분에서 예외가 발생할 수 있으므로, 잘못된 구성이 있는지 확인 필요
+            enableEdgeToEdge()
 
             // 권한 요청 코드
             val requestLauncher = registerForActivityResult(
                 ActivityResultContracts.RequestPermission()
             ) { isGranted ->
                 if (isGranted) {
-                    Log.d("kkang", "callback.. granted..")
                     handleFirstRun()
                 } else {
-                    Log.d("kkang", "callback.. denied..")
                     Toast.makeText(this, "알림 권한이 거부되었습니다. 앱을 종료합니다.", Toast.LENGTH_SHORT).show()
                     finish()
                 }
@@ -72,17 +85,12 @@ class MainActivity : AppCompatActivity() {
             // 권한 상태 체크
             val status = ContextCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS")
             if (status == PackageManager.PERMISSION_GRANTED) {
-                Log.d("kkang", "permission granted")
                 handleFirstRun()
             } else {
                 // 권한 요청
                 requestLauncher.launch("android.permission.POST_NOTIFICATIONS")
             }
         } catch (e: Exception) {
-            // 예외 발생 시 로그를 출력하고 종료되지 않도록 처리
-            Log.e("MainActivity", "Error in onCreate: ${e.message}")
-            e.printStackTrace()
-            Toast.makeText(this, "앱을 시작하는 중에 오류가 발생했습니다.", Toast.LENGTH_LONG).show()
             finish()
         }
     }
@@ -93,16 +101,10 @@ class MainActivity : AppCompatActivity() {
         val isFirstRun = sharedPreferences.getBoolean("isFirstRun", true)
 
         if (isFirstRun) {
-            Toast.makeText(this, "앱이 처음 실행되었습니다!", Toast.LENGTH_SHORT).show()
             val editor = sharedPreferences.edit()
             editor.putBoolean("isFirstRun", false)
             editor.apply()
-
-            // IntroFragment로 이동
-            Toast.makeText(this, "앱이 처음 실행되었습니다?", Toast.LENGTH_SHORT).show()
             startActivity(Intent(this, IntroActivity::class.java))
-        } else {
-            Toast.makeText(this, "앱을 다시 실행했습니다.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -118,7 +120,7 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
 
-        val adapter = MainListAdapter(announcementItems)
+        listAdapter = MainListAdapter(announcementItems)
         infoPollingServiceConnection = object: ServiceConnection {
             lateinit var infoPollingBinder: InfoPollingService.InfoBinder
             var done = false
@@ -127,10 +129,9 @@ class MainActivity : AppCompatActivity() {
                 done = true
                 infoPollingBinder = (service as InfoPollingService.InfoBinder)
                 infoPollingBinder.addNewItemsCallback {
-                    announcementItems.addAll(it)
-                    adapter.notifyDataSetChanged()
+                    announcementItems.addAll(0, it)
+                    listAdapter.notifyDataSetChanged()
                     binding.fabRefresh.visibility = View.VISIBLE
-                    Toast.makeText(this@MainActivity, "Done. Count: ${it.size}", Toast.LENGTH_SHORT).show()
                     unbindService(this)
                 }
             }
@@ -138,14 +139,13 @@ class MainActivity : AppCompatActivity() {
             override fun onServiceDisconnected(name: ComponentName?) {
                 if (!done) {
                     binding.fabRefresh.visibility = View.VISIBLE
-                    Toast.makeText(this@MainActivity, "FAILED", Toast.LENGTH_SHORT).show()
                     unbindService(this)
                 }
             }
         }
 
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
-        binding.recyclerView.adapter = adapter
+        binding.recyclerView.adapter = listAdapter
         binding.recyclerView.addItemDecoration(
             DividerItemDecoration(
                 this, LinearLayoutManager.VERTICAL
@@ -153,8 +153,7 @@ class MainActivity : AppCompatActivity() {
         )
         binding.fabRefresh.setOnClickListener {
             binding.fabRefresh.visibility = View.INVISIBLE
-            announcementItems.clear()
-            adapter.notifyDataSetChanged()
+            listAdapter.notifyDataSetChanged()
 
             val intent = Intent(applicationContext, InfoPollingService::class.java)
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O)
@@ -176,7 +175,7 @@ class MainActivity : AppCompatActivity() {
                 getParcelableArray(ANNUONCEMENTS)
             }?.let {
                 announcementItems.addAll(it.filterIsInstance<KNUAnnouncement>())
-                adapter.notifyDataSetChanged()
+                listAdapter.notifyDataSetChanged()
             }
         } ?: lifecycleScope.launch(Dispatchers.Default) {
             val announcements = announcementDao.getAllAnnouncements().map {
@@ -184,7 +183,7 @@ class MainActivity : AppCompatActivity() {
             }
             withContext(Dispatchers.Main) {
                 announcementItems.addAll(announcements)
-                adapter.notifyDataSetChanged()
+                listAdapter.notifyDataSetChanged()
             }
         }
     }
